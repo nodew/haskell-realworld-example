@@ -1,0 +1,75 @@
+name:                conduit-server
+version:             0.1.0.0
+github:              "nodew/haskell-realworld-example"
+license:             BSD3
+author:              "Qiao Wang"
+maintainer:          "wangqiao11@hotmail.com"
+copyright:           "MIT"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/nodew/haskell-realworld-example#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- rio
+- rel8
+- text
+- bytestring
+- base64-bytestring
+- data-default
+- aeson
+- lens
+- jose
+- cryptonite
+- mtl
+- transformers
+- dhall
+- servant-server
+- servant-auth
+- servant-auth-server
+- wai
+- wai-logger
+- wai-extra
+- warp
+- hasql
+- time
+- extra
+
+default-extensions:
+- NoImplicitPrelude
+- OverloadedStrings
+
+library:
+  source-dirs: src
+
+executables:
+  conduit-server-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - conduit-server
+
+tests:
+  conduit-server-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - conduit-server

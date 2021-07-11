@@ -1,0 +1,12 @@
+resolver: lts-18.0
+
+packages:
+- .
+
+allow-newer: true
+
+extra-deps:
+- rel8-1.0.0.1
+- hasql-1.4.5.1
+- servant-auth-0.4.0.0
+- servant-auth-server-0.4.6.0

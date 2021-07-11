@@ -1,0 +1,4 @@
+.stack-work/
+*~
+conduit.dhall
+conduit-server.cabal
