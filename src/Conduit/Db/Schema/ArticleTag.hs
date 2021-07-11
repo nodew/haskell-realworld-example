@@ -9,7 +9,6 @@ module Conduit.Db.Schema.ArticleTag where
 import RIO
 import Rel8
 
-import Conduit.App
 import Conduit.Core.Article
 
 data ArticleTagEntity f = ArticleTagEntity

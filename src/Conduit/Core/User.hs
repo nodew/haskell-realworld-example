@@ -10,9 +10,6 @@ import RIO
 import qualified Data.Text as T
 import Rel8 ( DBType, DBEq )
 import Data.Aeson ( FromJSON, ToJSON )
-import Crypto.Random
-import Crypto.Hash
-import Data.ByteString.Base64
 import Servant.Server.Experimental.Auth
 import Servant
 

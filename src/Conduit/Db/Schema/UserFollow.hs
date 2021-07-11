@@ -9,7 +9,6 @@ module Conduit.Db.Schema.UserFollow where
 import RIO
 import Rel8
 
-import Conduit.App
 import Conduit.Core.User
 
 data UserFollowEntity f = UserFollowEntity

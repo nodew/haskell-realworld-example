@@ -7,7 +7,6 @@ import RIO
 import Data.Aeson
 import Data.Aeson.Types
 import Servant
-import Prelude (putStrLn)
 
 import Conduit.App
 import Conduit.Api.Common

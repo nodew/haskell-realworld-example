@@ -10,7 +10,6 @@ module Conduit.Db.Schema.User where
 
 import RIO hiding (set)
 import Rel8
-import GHC.Generics (Generic)
 import Hasql.Connection ( Connection )
 
 import Conduit.Core.User

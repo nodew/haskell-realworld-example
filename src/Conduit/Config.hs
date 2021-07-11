@@ -3,17 +3,20 @@
 
 module Conduit.Config where
 
-import Dhall (FromDhall)
+import RIO
+import Dhall
 import Hasql.Connection
-import GHC.Generics
-import RIO (Text, Show, Word16, toStrictBytes, ($))
-import RIO.Text
+import qualified Data.Text as T
+import Data.Char (toLower)
 
 data Config = Config
     { cfgPort :: Word16 
     , cfgJwtSecret :: Text
     , cfgDb :: DbConfig
-    } deriving (Generic, Show, FromDhall)
+    } deriving (Generic, Show)
+
+instance FromDhall Config where
+    autoWith _ = genericAutoWith $ mkDhallInterpretOptions 3
 
 data DbConfig = DbConfig 
     { dbPort     :: Word16
@@ -21,7 +24,15 @@ data DbConfig = DbConfig
     , dbUser     :: Text
     , dbPasswd   :: Text
     , dbDatabase :: Text  
-    } deriving (Generic, Show, FromDhall)
+    } deriving (Generic, Show)
+
+instance FromDhall DbConfig where
+    autoWith _ = genericAutoWith $ mkDhallInterpretOptions 2
+
+mkDhallInterpretOptions :: Int -> InterpretOptions
+mkDhallInterpretOptions prefixLength = defaultInterpretOptions { fieldModifier = headToLower . T.drop prefixLength }
+    where
+        headToLower x = T.pack [toLower $ T.head x] `T.append` T.tail x
 
 mapDbConfigToSettings :: DbConfig -> Settings
 mapDbConfigToSettings cfg =

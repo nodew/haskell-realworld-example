@@ -9,8 +9,6 @@ module Conduit.Db.Schema.Tag where
 import RIO
 import Rel8
 
-import Conduit.App
-import Conduit.Core.User
 import Conduit.Core.Article
 
 data TagEntity f = TagEntity
