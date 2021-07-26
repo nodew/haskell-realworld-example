@@ -12,8 +12,8 @@ import Rel8
 import Conduit.Core.Article
 
 data ArticleTagEntity f = ArticleTagEntity
-    { tgdArticleId :: Column f ArticleId  
-    , tgdTagId     :: Column f TagId 
+    { tgdArticleId :: Column f ArticleId
+    , tgdTagId     :: Column f TagId
     }
     deriving stock (Generic)
     deriving anyclass (Rel8able)
@@ -28,4 +28,12 @@ articleTagSchema = TableSchema
         { tgdArticleId = "tgd_article_id"
         , tgdTagId = "tgd_tag_id"
         }
+    }
+
+insertArticleTagsStmt :: ArticleId -> [TagId] -> Insert Int64
+insertArticleTagsStmt articleId tagIds = Insert
+    { into = articleTagSchema
+    , rows = map (ArticleTagEntity (lit articleId) . lit) tagIds
+    , onConflict = DoNothing
+    , returning = NumberOfRowsAffected
     }

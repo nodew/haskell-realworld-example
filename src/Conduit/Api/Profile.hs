@@ -25,7 +25,7 @@ type ProfileApi = AuthProtect "Optional"
 
 getProfileHandler :: Maybe User -> Text -> AppM (Profile UserProfile)
 getProfileHandler maybeUser targetUsername
-    | T.null targetUsername = throwIO err403
+    | T.null targetUsername = throwIO err404
     | maybe "" (getUsername . userName) maybeUser == targetUsername = do
         let user = fromJust maybeUser
         return $ Profile $ mapUserToUserProfile user False
@@ -41,7 +41,7 @@ getProfileHandler maybeUser targetUsername
 
 followUserHandler :: User -> Text -> AppM (Profile UserProfile)
 followUserHandler user targetUsername
-    | T.null targetUsername = throwIO err403
+    | T.null targetUsername = throwIO err404
     | (getUsername . userName) user == targetUsername = throwIO err403
     | otherwise = do
         targetUser <- UserDb.getUserByName (Username targetUsername)
@@ -49,11 +49,11 @@ followUserHandler user targetUsername
             Nothing -> throwIO err404
             Just targetUser' -> do
                 _ <- UserDb.followUser user (userId targetUser')
-                return $ Profile $ mapUserToUserProfile targetUser' True 
+                return $ Profile $ mapUserToUserProfile targetUser' True
 
 unFollowUserHandler :: User -> Text -> AppM (Profile UserProfile)
 unFollowUserHandler user targetUsername
-    | T.null targetUsername = throwIO err403
+    | T.null targetUsername = throwIO err404
     | (getUsername . userName) user == targetUsername = throwIO err403
     | otherwise = do
         targetUser <- UserDb.getUserByName (Username targetUsername)

@@ -6,6 +6,7 @@ import RIO
 import Rel8
 import Data.Aeson
 import Data.Time
+import qualified Data.Text as T
 
 import Conduit.Core.User
 
@@ -16,6 +17,7 @@ data Article = Article
     , articleSlug        :: Slug
     , articleDescription :: Text
     , articleBody        :: Text
+    , articleTags        :: [Text]
     , articleCreatedAt   :: UTCTime
     , articleUpdatedAt   :: UTCTime
     }
@@ -26,6 +28,8 @@ newtype ArticleId = ArticleId { getArticleId :: Int64 }
 newtype Slug = Slug { getSlug :: Text }
     deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)
 
-newtype TagId = TagId { getTagId :: Text }
+newtype TagId = TagId { getTagId :: Int64 }
     deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)
 
+slugify :: Text -> Slug
+slugify = Slug . T.intercalate "-" . T.words

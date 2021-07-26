@@ -10,12 +10,15 @@ import Conduit.App
 import Conduit.Api.Auth
 import Conduit.Api.User
 import Conduit.Api.Profile
+import Conduit.Api.Article
 
-type ConduitApi = "api" :> (AuthApi 
+type ConduitApi = "api" :> (AuthApi
                         :<|> UserApi
-                        :<|> ProfileApi)
+                        :<|> ProfileApi
+                        :<|> ArticleApi)
 
 conduitServer :: ServerT ConduitApi AppM
-conduitServer = authServer 
+conduitServer = authServer
             :<|> userServer
-            :<|> profileServer  
+            :<|> profileServer
+            :<|> articleServer

@@ -30,3 +30,7 @@ userFollowSchema = TableSchema
         }
     }
 
+checkFollowshipStmt :: User -> Expr UserId -> Query (Expr Bool)
+checkFollowshipStmt user following = exists $ do
+    a <- each userFollowSchema
+    where_ $ (fwsUserId a ==. lit (userId user)) &&. (fwsFollowingUserId a ==. following)

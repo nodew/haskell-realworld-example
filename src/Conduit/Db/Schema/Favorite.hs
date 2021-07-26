@@ -14,8 +14,8 @@ import Conduit.Core.User
 import Conduit.Core.Article
 
 data FavoriteEntity f = FavoriteEntity
-    { favoriteUserId    :: Column f UserId   
-    , favoriteArticleId :: Column f ArticleId 
+    { favoriteUserId    :: Column f UserId
+    , favoriteArticleId :: Column f ArticleId
     }
     deriving stock (Generic)
     deriving anyclass (Rel8able)
@@ -31,3 +31,8 @@ favoriteSchema = TableSchema
         , favoriteArticleId = "favor_article_id"
         }
     }
+
+checkFavoriteStmt :: UserId -> Expr ArticleId -> Query (Expr Bool)
+checkFavoriteStmt userId articleId = exists $ do
+    favorite <- each favoriteSchema
+    where_ $ (favoriteUserId favorite ==. lit userId) &&. (favoriteArticleId favorite ==.  articleId)

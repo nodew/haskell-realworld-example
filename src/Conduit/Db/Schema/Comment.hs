@@ -17,7 +17,7 @@ data CommentEntity f = CommentEntity
     { _commentId        :: Column f CommentId
     , _commentBody      :: Column f Text
     , _commentArticleId :: Column f ArticleId
-    , _commentAuthorId  :: Column f UserId 
+    , _commentAuthorId  :: Column f UserId
     , _commentCreatedAt :: Column f UTCTime
     , _commentUpdatedAt :: Column f UTCTime
     }
@@ -35,8 +35,8 @@ commentSchema = TableSchema
         , _commentBody      = "comment_body"
         , _commentArticleId = "comment_article_id"
         , _commentAuthorId  = "comment_user_id"
-        , _commentCreatedAt = "comment_createdAt"
-        , _commentUpdatedAt = "comment_updatedAt"
+        , _commentCreatedAt = "comment_createdat"
+        , _commentUpdatedAt = "comment_updatedat"
         }
     }
 

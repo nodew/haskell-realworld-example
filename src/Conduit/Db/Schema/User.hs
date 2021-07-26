@@ -51,3 +51,65 @@ mapUserEntityToUser entity = User
     , userBio    = _userBio entity
     , userImage  = _userImage entity
     }
+
+updateUserExprWithUser :: User -> UserEntity Expr -> UserEntity Expr
+updateUserExprWithUser user expr = expr
+                                { _userName = lit (userName user)
+                                , _userEmail = lit (userEmail user)
+                                , _userBio = lit (userBio user)
+                                , _userImage = lit (userImage user)
+                                }
+
+updateUserExprWithPassword :: (Text, Text) -> UserEntity Expr ->  UserEntity Expr
+updateUserExprWithPassword (hash, salt) expr = expr
+                                {  _userSalt = lit salt
+                                , _userPassword = lit hash
+                                }
+
+getUserByIdStmt :: UserId -> Query (UserEntity Expr)
+getUserByIdStmt uid = do
+    a <- each userSchema
+    where_ $ _userId a ==. lit uid
+    return a
+
+getUserByNameStmt :: Username -> Query (UserEntity Expr)
+getUserByNameStmt name = do
+    a <- each userSchema
+    where_ $ _userName a ==. lit name
+    return a
+
+getUserByEmailStmt :: EmailAddress  -> Query (UserEntity Expr)
+getUserByEmailStmt email = do
+    a <- each userSchema
+    where_ $ _userEmail a ==. lit email
+    return a
+
+insertUserStmt :: Username -> EmailAddress -> Text -> Text -> Insert [UserId]
+insertUserStmt username email hash salt = Insert
+    { into = userSchema
+    , rows = [ UserEntity
+                { _userId = unsafeCastExpr $ nextval "users_user_id_seq"
+                , _userName = lit username
+                , _userEmail = lit email
+                , _userPassword = lit hash
+                , _userSalt = lit salt
+                , _userBio  = ""
+                , _userImage = ""
+                }
+            ]
+    , onConflict = DoNothing
+    , returning = Projection _userId
+    }
+
+updateUserStmt :: User -> Maybe (Text, Text) -> Update Int64
+updateUserStmt user maybePassword =
+    Update
+        { target = userSchema
+        , updateWhere = \o -> _userId o ==. lit (userId user)
+        , set = setter
+        , returning = NumberOfRowsAffected
+        }
+    where
+        setter = case maybePassword of
+            Just pass -> updateUserExprWithPassword pass . updateUserExprWithUser user
+            _         -> updateUserExprWithUser user

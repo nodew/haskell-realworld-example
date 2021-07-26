@@ -12,7 +12,7 @@ import Rel8
 import Conduit.Core.Article
 
 data TagEntity f = TagEntity
-    { tagId   :: Column f TagId 
+    { tagId   :: Column f TagId
     , tagText :: Column f Text
     }
     deriving stock (Generic)
@@ -28,4 +28,18 @@ tagSchema = TableSchema
         { tagId = "tag_id"
         , tagText = "tag_text"
         }
+    }
+
+getTagIdStmt :: Text -> Query (Expr TagId)
+getTagIdStmt tag = do
+    tagEntity <- each tagSchema
+    where_ $ tagText tagEntity ==. lit tag
+    return $ tagId tagEntity
+
+insertTagStmt :: Text -> Insert [TagId]
+insertTagStmt tag = Insert
+    { into = tagSchema
+    , rows = [TagEntity (unsafeCastExpr $ nextval "tags_tag_id_seq")  (lit tag)]
+    , onConflict = DoNothing
+    , returning = Projection tagId
     }
