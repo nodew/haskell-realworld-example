@@ -35,4 +35,4 @@ favoriteSchema = TableSchema
 checkFavoriteStmt :: UserId -> Expr ArticleId -> Query (Expr Bool)
 checkFavoriteStmt userId articleId = exists $ do
     favorite <- each favoriteSchema
-    where_ $ (favoriteUserId favorite ==. lit userId) &&. (favoriteArticleId favorite ==.  articleId)
+    where_ $ (favoriteUserId favorite ==. lit userId) &&. (favoriteArticleId favorite ==. articleId)

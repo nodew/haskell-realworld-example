@@ -20,7 +20,6 @@ data ArticleEntity f = ArticleEntity
     , _articleSlug        :: Column f Slug
     , _articleDescription :: Column f Text
     , _articleBody        :: Column f Text
-    , _articleDeleted     :: Column f Bool
     , _articleCreatedAt   :: Column f UTCTime
     , _articleUpdatedAt   :: Column f UTCTime
     }
@@ -40,7 +39,6 @@ articleSchema = TableSchema
         , _articleSlug        = "article_slug"
         , _articleDescription = "article_description"
         , _articleBody        = "article_body"
-        , _articleDeleted     = "article_deleted"
         , _articleCreatedAt   = "article_createdat"
         , _articleUpdatedAt   = "article_updatedat"
         }
@@ -69,7 +67,6 @@ insertArticleStmt article = Insert
                 , _articleSlug = lit (articleSlug article)
                 , _articleDescription = lit (articleDescription article)
                 , _articleBody  = lit (articleBody article)
-                , _articleDeleted  = false
                 , _articleCreatedAt = lit (articleCreatedAt article)
                 , _articleUpdatedAt = lit (articleUpdatedAt article)
                 }
@@ -82,10 +79,4 @@ getArticleEntityByIdStmt :: ArticleId -> Query (ArticleEntity Expr)
 getArticleEntityByIdStmt id = do
     article <- each articleSchema
     where_ $ _articleId article ==. lit id
-    return article
-
-getArticleEntityBySlugStmt :: Slug -> Query (ArticleEntity Expr)
-getArticleEntityBySlugStmt slug = do
-    article <- each articleSchema
-    where_ $ _articleSlug article ==. lit slug
     return article

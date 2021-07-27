@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS articles (
   , article_title VARCHAR(256) NOT NULL
   , article_description VARCHAR(256) NOT NULL
   , article_body TEXT NOT NULL
-  , article_deleted BOOLEAN NOT NULL DEFAULT FALSE
   , article_createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   , article_updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   , article_user_id INTEGER NOT NULL

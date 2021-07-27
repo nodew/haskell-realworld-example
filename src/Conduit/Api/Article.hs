@@ -1,17 +1,21 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
 module Conduit.Api.Article where
 
 import RIO
 import Data.Aeson
 import Servant
 import Data.Time
+import Control.Monad.Trans.Maybe
 
 import Conduit.App
 import Conduit.Core.User
 import Conduit.Core.Article
 import qualified Conduit.Db.Article as ArticleDb
+import qualified Conduit.Db.User as UserDb
 import Conduit.Api.Common
 import Conduit.Util
 
@@ -106,6 +110,8 @@ type ArticleApi = AuthProtect "Optional"
                         :> Capture "slug" Text
                         :> Get '[JSON] (BoxedArticle ArticleData)
 
+
+
 getArticlesHandler :: Maybe User
                    -> Maybe Int64
                    -> Maybe Int64
@@ -113,8 +119,31 @@ getArticlesHandler :: Maybe User
                    -> Maybe Text
                    -> Maybe Text
                    -> AppM ArticlesResponse
-getArticlesHandler maybeUser page pageSize author favorited tag =
-    undefined
+getArticlesHandler maybeUser page pageSize authorName favorited tag = do
+    (pagedResults, t) <- do
+        tagId <- maybe (return Nothing) ArticleDb.getTagId tag
+        withValidFilter tag tagId $ do
+            author <- maybe (return Nothing) UserDb.getUserByName (Username <$> authorName)
+            withValidFilter authorName author $ do
+                favoritedBy <- maybe (return Nothing) UserDb.getUserByName (Username <$> favorited)
+                withValidFilter favorited favoritedBy $ do
+                    let filters = ArticleDb.ArticleFilters tagId (userId <$> favoritedBy) (userId <$> author)
+                    let pageParam = ArticleDb.Paged (fromMaybe 0 page) (fromMaybe 20 pageSize)
+                    ArticleDb.getAllArticle maybeUser pageParam filters
+
+    return $ ArticlesResponse t
+        $ map (\(article, author, followingAuthor, favorited, favoritedCount) ->
+                    mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount)
+            pagedResults
+    where
+        isValidParam :: Maybe a -> Maybe b -> Bool
+        isValidParam (Just _) Nothing = False
+        isValidParam _        _       = True
+
+        withValidFilter :: forall a b c . Maybe a -> Maybe b -> AppM ([c], Int64) -> AppM ([c], Int64)
+        withValidFilter a b m
+            | isValidParam a b = m
+            | otherwise        = return ([], 0)
 
 createNewArticleHandler :: User -> BoxedArticle NewArticleData -> AppM (BoxedArticle ArticleData)
 createNewArticleHandler user (BoxedArticle newArticle) = do
@@ -147,7 +176,7 @@ updateArticleHandler =
 
 getArticleBySlugHandler :: Maybe User -> Text -> Text -> AppM (BoxedArticle ArticleData)
 getArticleBySlugHandler maybeUser author slug = do
-    result <- ArticleDb.getCompletedArticleBySlug maybeUser (Slug slug)
+    result <- ArticleDb.getCompletedArticleBySlug maybeUser (Username author) (Slug slug)
     case result of
         Nothing -> throwIO err404
         Just (article, author, followingAuthor, favorited, favoritedCount) ->
