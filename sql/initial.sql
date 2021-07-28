@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS follows (
 
 CREATE TABLE IF NOT EXISTS articles (
     article_id SERIAL PRIMARY KEY
-  , article_slug VARCHAR(256) NOT NULL
+  , article_slug VARCHAR(256) UNIQUE NOT NULL
   , article_title VARCHAR(256) NOT NULL
   , article_description VARCHAR(256) NOT NULL
   , article_body TEXT NOT NULL
@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS articles (
   , article_user_id INTEGER NOT NULL
 
   , FOREIGN KEY (article_user_id) REFERENCES users (user_id)
-  , UNIQUE (article_user_id, article_slug)
 );
 
 CREATE TABLE IF NOT EXISTS tags (

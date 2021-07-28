@@ -106,11 +106,8 @@ type ArticleApi = AuthProtect "Optional"
                         :> Put '[JSON] (BoxedArticle ArticleData)
                 :<|> AuthProtect "Optional"
                         :> "articles"
-                        :> Capture "author" Text
                         :> Capture "slug" Text
                         :> Get '[JSON] (BoxedArticle ArticleData)
-
-
 
 getArticlesHandler :: Maybe User
                    -> Maybe Int64
@@ -128,7 +125,7 @@ getArticlesHandler maybeUser page pageSize authorName favorited tag = do
                 favoritedBy <- maybe (return Nothing) UserDb.getUserByName (Username <$> favorited)
                 withValidFilter favorited favoritedBy $ do
                     let filters = ArticleDb.ArticleFilters tagId (userId <$> favoritedBy) (userId <$> author)
-                    let pageParam = ArticleDb.Paged (fromMaybe 0 page) (fromMaybe 20 pageSize)
+                    let pageParam = ArticleDb.Pagination (fromMaybe 0 page) (fromMaybe 20 pageSize)
                     ArticleDb.getAllArticle maybeUser pageParam filters
 
     return $ ArticlesResponse t
@@ -148,6 +145,7 @@ getArticlesHandler maybeUser page pageSize authorName favorited tag = do
 createNewArticleHandler :: User -> BoxedArticle NewArticleData -> AppM (BoxedArticle ArticleData)
 createNewArticleHandler user (BoxedArticle newArticle) = do
     currentTime <- liftIO getCurrentTime
+    slug <- mkSlug title
     article <- ArticleDb.createArticle $ Article
                                             { articleAuthorId    = userId user
                                             , articleId          = ArticleId 0
@@ -168,15 +166,15 @@ createNewArticleHandler user (BoxedArticle newArticle) = do
         description = newArticleDescription newArticle
         body = newArticleBody newArticle
         tags = newArticleTagList newArticle
-        slug = slugify title
+
 
 updateArticleHandler :: User -> Text -> BoxedArticle UpdateArticleData -> AppM (BoxedArticle ArticleData)
 updateArticleHandler =
     undefined
 
-getArticleBySlugHandler :: Maybe User -> Text -> Text -> AppM (BoxedArticle ArticleData)
-getArticleBySlugHandler maybeUser author slug = do
-    result <- ArticleDb.getCompletedArticleBySlug maybeUser (Username author) (Slug slug)
+getArticleBySlugHandler :: Maybe User -> Text -> AppM (BoxedArticle ArticleData)
+getArticleBySlugHandler maybeUser slug = do
+    result <- ArticleDb.getCompletedArticleBySlug maybeUser (Slug slug)
     case result of
         Nothing -> throwIO err404
         Just (article, author, followingAuthor, favorited, favoritedCount) ->

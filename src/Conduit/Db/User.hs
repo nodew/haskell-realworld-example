@@ -17,7 +17,7 @@ import Conduit.Util
 
 getUserById' :: forall m . MonadIO m => Connection -> UserId -> m (Maybe User)
 getUserById' conn uid = do
-    users <- liftIO $ select conn $ getUserByIdStmt uid
+    users <- liftIO $ select conn $ getUserByIdStmt (litExpr uid)
     return $ listToMaybe $ map mapUserEntityToUser users
 
 getUserByName' :: forall m . MonadIO m => Connection -> Username -> m (Maybe User)

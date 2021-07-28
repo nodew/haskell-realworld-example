@@ -66,10 +66,10 @@ updateUserExprWithPassword (hash, salt) expr = expr
                                 , _userPassword = lit hash
                                 }
 
-getUserByIdStmt :: UserId -> Query (UserEntity Expr)
+getUserByIdStmt :: Expr UserId -> Query (UserEntity Expr)
 getUserByIdStmt uid = do
     a <- each userSchema
-    where_ $ _userId a ==. lit uid
+    where_ $ _userId a ==. uid
     return a
 
 getUserByNameStmt :: Username -> Query (UserEntity Expr)

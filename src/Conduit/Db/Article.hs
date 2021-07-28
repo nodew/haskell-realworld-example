@@ -26,7 +26,7 @@ data ArticleFilters = ArticleFilters
     , afsAuthor :: Maybe UserId
     }
 
-data Paged = Paged
+data Pagination = Pagination
     { pageNum  :: Int64
     , pageSize :: Int64
     }
@@ -49,36 +49,27 @@ mapArticleWithContextData (article, tags, author, followingAuthor, favorited, fa
 filterArticleByAuthorStmt :: ArticleEntity Expr -> UserId -> Expr Bool
 filterArticleByAuthorStmt article uid = _articleAuthorId article ==. lit uid
 
-filterArticleByFavoriteStmt :: ArticleEntity Expr -> UserId -> Query (ArticleEntity Expr)
+filterArticleByFavoriteStmt :: ArticleEntity Expr -> UserId -> Query ()
 filterArticleByFavoriteStmt article uid = do
-    whereExists $ do
-        favorite <- each favoriteSchema
-        where_ $ favoriteUserId favorite ==. lit uid &&. favoriteArticleId favorite ==. _articleId article
-    return article
+    favorite <- each favoriteSchema
+    where_ $ favoriteUserId favorite ==. lit uid &&. favoriteArticleId favorite ==. _articleId article
 
-filterArticleByTagStmt :: ArticleEntity Expr -> TagId -> Query (ArticleEntity Expr)
+filterArticleByTagStmt :: ArticleEntity Expr -> TagId -> Query ()
 filterArticleByTagStmt article tagId = do
-    whereExists $ do
-        tag <- each articleTagSchema
-        where_ $ tgdTagId tag ==. lit tagId &&. _articleId article ==. tgdArticleId tag
-    return article
+    tag <- each articleTagSchema
+    where_ $ tgdTagId tag ==. lit tagId &&. _articleId article ==. tgdArticleId tag
 
 getAllArticleStmt :: ArticleFilters -> Query (ArticleEntity Expr)
 getAllArticleStmt filters = do
     article <- each articleSchema
     where_ $ maybe (lit True) (filterArticleByAuthorStmt article) author'
-    applyFilter favorite' filterArticleByFavoriteStmt article
-    applyFilter tag' filterArticleByTagStmt article
+    forM_ favorite' $ filterArticleByFavoriteStmt article
+    forM_ tag' $ filterArticleByTagStmt article
     return article
     where
         tag' = afsTag filters
         favorite' = afsFavorite filters
         author' = afsAuthor filters
-        applyFilter :: forall m a b . Monad m => Maybe a -> (b -> a -> m b) -> b -> m b
-        applyFilter mb f = do
-            case mb of
-                Just a -> flip f a
-                Nothing -> return
 
 getLimitedArticleStmt :: Int64 -> Int64 -> ArticleFilters -> Query (ArticleEntity Expr)
 getLimitedArticleStmt pageSize page filters =
@@ -102,14 +93,6 @@ getArticleFeatureDataStmt article = do
         favorite <- each favoriteSchema
         where_ $ _articleId article ==. favoriteArticleId favorite
     return (tags, favoritedCount)
-
-getArticleEntityBySlugStmt :: Username -> Slug -> Query (ArticleEntity Expr, UserEntity Expr)
-getArticleEntityBySlugStmt author slug = do
-    user <- each userSchema
-    where_ $ _userName user ==. lit author
-    article <- each articleSchema
-    where_ $ _articleSlug article ==. lit slug &&. _articleAuthorId article ==. _userId user
-    return (article, user)
 
 {--------------------------------------------------------------------------------------------------------------------}
 
@@ -135,8 +118,7 @@ getCompletedArticleById' conn maybeUser id = do
     records <- liftIO $ select conn $ do
         article <- getArticleEntityByIdStmt id
         (tags, favoritedCount) <- getArticleFeatureDataStmt article
-        author <- each userSchema
-        where_ $ _userId author ==. _articleAuthorId article
+        author <- getUserByIdStmt (_articleAuthorId article)
         favorited <- maybe (return $ litExpr False) (\user -> checkFavoriteStmt (userId user) (_articleId article)) maybeUser
         followingAuthor <- maybe (return $ litExpr False) (\user -> checkFollowshipStmt user (_articleAuthorId article)) maybeUser
         return (article, tags, author, followingAuthor, favorited, favoritedCount)
@@ -147,11 +129,12 @@ getArticleById' conn id = do
     records <- liftIO $ listToMaybe <$> select conn (getArticleEntityByIdStmt id)
     return $ mapArticleEntityToArticle <$> records
 
-getCompletedArticleBySlug' :: forall m . MonadIO m => Connection -> Maybe User -> Username -> Slug -> m (Maybe (Article, User, Bool, Bool, Int64))
-getCompletedArticleBySlug' conn maybeUser author slug = do
+getCompletedArticleBySlug' :: forall m . MonadIO m => Connection -> Maybe User -> Slug -> m (Maybe (Article, User, Bool, Bool, Int64))
+getCompletedArticleBySlug' conn maybeUser slug = do
     records <- liftIO $ select conn $ do
-        (article, author) <- getArticleEntityBySlugStmt author slug
+        article <- getArticleEntityBySlugStmt slug
         (tags, favoritedCount) <- getArticleFeatureDataStmt article
+        author <- getUserByIdStmt (_articleAuthorId article)
         favorited <- maybe (return $ litExpr False) (\user -> checkFavoriteStmt (userId user) (_articleId article)) maybeUser
         followingAuthor <- maybe (return $ litExpr False) (\user -> checkFollowshipStmt user (_articleAuthorId article)) maybeUser
         return (article, tags, author, followingAuthor, favorited, favoritedCount)
@@ -159,10 +142,10 @@ getCompletedArticleBySlug' conn maybeUser author slug = do
 
 getArticleBySlug' :: forall m . MonadIO m => Connection -> Username -> Slug -> m (Maybe Article)
 getArticleBySlug' conn author slug = do
-    records <- liftIO $ listToMaybe <$> select conn (getArticleEntityBySlugStmt author slug)
-    return $ mapArticleEntityToArticle . fst <$> records
+    records <- liftIO $ listToMaybe <$> select conn (getArticleEntityBySlugStmt slug)
+    return $ mapArticleEntityToArticle <$> records
 
-getAllArticle' :: forall m . MonadIO m => Connection -> Maybe User -> Paged -> ArticleFilters -> m ([(Article, User, Bool, Bool, Int64)], Int64)
+getAllArticle' :: forall m . MonadIO m => Connection -> Maybe User -> Pagination -> ArticleFilters -> m ([(Article, User, Bool, Bool, Int64)], Int64)
 getAllArticle' conn maybeUser p filters = do
     total <- liftIO $ select conn $ aggregate $ do
         _ <- getAllArticleStmt filters
@@ -190,13 +173,13 @@ createArticle = flipM getConn createArticle'
 getCompletedArticleById :: Maybe User -> ArticleId -> AppM (Maybe (Article, User, Bool, Bool, Int64))
 getCompletedArticleById = flipM2 getConn getCompletedArticleById'
 
-getCompletedArticleBySlug :: Maybe User -> Username -> Slug -> AppM (Maybe (Article, User, Bool, Bool, Int64))
-getCompletedArticleBySlug = flipM3 getConn getCompletedArticleBySlug'
+getCompletedArticleBySlug :: Maybe User -> Slug -> AppM (Maybe (Article, User, Bool, Bool, Int64))
+getCompletedArticleBySlug = flipM2 getConn getCompletedArticleBySlug'
 
 checkFavorite :: User -> ArticleId -> AppM Bool
 checkFavorite = flipM2 getConn checkFavorite'
 
-getAllArticle :: Maybe User -> Paged -> ArticleFilters -> AppM ([(Article, User, Bool, Bool, Int64)], Int64)
+getAllArticle :: Maybe User -> Pagination -> ArticleFilters -> AppM ([(Article, User, Bool, Bool, Int64)], Int64)
 getAllArticle = flipM3 getConn getAllArticle'
 
 getTagId :: Text -> AppM (Maybe TagId)

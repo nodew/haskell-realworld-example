@@ -80,3 +80,9 @@ getArticleEntityByIdStmt id = do
     article <- each articleSchema
     where_ $ _articleId article ==. lit id
     return article
+
+getArticleEntityBySlugStmt :: Slug -> Query (ArticleEntity Expr)
+getArticleEntityBySlugStmt slug = do
+    article <- each articleSchema
+    where_ $ _articleSlug article ==. lit slug
+    return article
