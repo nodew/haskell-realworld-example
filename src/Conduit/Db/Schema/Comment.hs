@@ -14,12 +14,12 @@ import Conduit.Core.Article
 import Conduit.Core.Comment
 
 data CommentEntity f = CommentEntity
-    { _commentId        :: Column f CommentId
-    , _commentBody      :: Column f Text
-    , _commentArticleId :: Column f ArticleId
-    , _commentAuthorId  :: Column f UserId
-    , _commentCreatedAt :: Column f UTCTime
-    , _commentUpdatedAt :: Column f UTCTime
+    { entityCommentId        :: Column f CommentId
+    , entityCommentBody      :: Column f Text
+    , entityCommentArticleId :: Column f ArticleId
+    , entityCommentAuthorId  :: Column f UserId
+    , entityCommentCreatedAt :: Column f UTCTime
+    , entityCommentUpdatedAt :: Column f UTCTime
     }
     deriving stock (Generic)
     deriving anyclass (Rel8able)
@@ -31,21 +31,21 @@ commentSchema = TableSchema
     { name = "comments"
     , schema = Nothing
     , columns = CommentEntity
-        { _commentId        = "comment_id"
-        , _commentBody      = "comment_body"
-        , _commentArticleId = "comment_article_id"
-        , _commentAuthorId  = "comment_user_id"
-        , _commentCreatedAt = "comment_createdat"
-        , _commentUpdatedAt = "comment_updatedat"
+        { entityCommentId        = "comment_id"
+        , entityCommentBody      = "comment_body"
+        , entityCommentArticleId = "comment_article_id"
+        , entityCommentAuthorId  = "comment_user_id"
+        , entityCommentCreatedAt = "comment_createdat"
+        , entityCommentUpdatedAt = "comment_updatedat"
         }
     }
 
 mapCommentEntityToComment :: CommentEntity Result -> Comment
 mapCommentEntityToComment entity = Comment
-    { commentId        = _commentId entity
-    , commentBody      = _commentBody entity
-    , commentArticleId = _commentArticleId entity
-    , commentAuthorId  = _commentAuthorId entity
-    , commentCreatedAt = _commentCreatedAt entity
-    , commentUpdatedAt = _commentUpdatedAt entity
+    { commentId        = entityCommentId entity
+    , commentBody      = entityCommentBody entity
+    , commentArticleId = entityCommentArticleId entity
+    , commentAuthorId  = entityCommentAuthorId entity
+    , commentCreatedAt = entityCommentCreatedAt entity
+    , commentUpdatedAt = entityCommentUpdatedAt entity
     }

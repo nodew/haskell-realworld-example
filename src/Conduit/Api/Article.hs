@@ -116,21 +116,22 @@ getArticlesHandler :: Maybe User
                    -> Maybe Text
                    -> Maybe Text
                    -> AppM ArticlesResponse
-getArticlesHandler maybeUser page pageSize authorName favorited tag = do
+getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
     (pagedResults, t) <- do
-        tagId <- maybe (return Nothing) ArticleDb.getTagId tag
-        withValidFilter tag tagId $ do
-            author <- maybe (return Nothing) UserDb.getUserByName (Username <$> authorName)
-            withValidFilter authorName author $ do
-                favoritedBy <- maybe (return Nothing) UserDb.getUserByName (Username <$> favorited)
-                withValidFilter favorited favoritedBy $ do
+        tagId <- maybe (return Nothing) ArticleDb.getTagId mbTag
+        withValidFilter mbTag tagId $ do
+            author <- maybe (return Nothing) UserDb.getUserByName (Username <$> mbAuthorName)
+            withValidFilter mbAuthorName author $ do
+                favoritedBy <- maybe (return Nothing) UserDb.getUserByName (Username <$> mbFavorited)
+                withValidFilter mbFavorited favoritedBy $ do
                     let filters = ArticleDb.ArticleFilters tagId (userId <$> favoritedBy) (userId <$> author)
-                    let pageParam = ArticleDb.Pagination (fromMaybe 0 page) (fromMaybe 20 pageSize)
-                    ArticleDb.getAllArticle maybeUser pageParam filters
+                    let pageParam = ArticleDb.Pagination (fromMaybe 0 mbPage) (fromMaybe 20 mbPageSize)
+                    ArticleDb.getPagedArticle mbUser pageParam filters
 
     return $ ArticlesResponse t
-        $ map (\(article, author, followingAuthor, favorited, favoritedCount) ->
-                    mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount)
+        $ map
+            (\(ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) ->
+                mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount)
             pagedResults
     where
         isValidParam :: Maybe a -> Maybe b -> Bool
@@ -173,11 +174,11 @@ updateArticleHandler =
     undefined
 
 getArticleBySlugHandler :: Maybe User -> Text -> AppM (BoxedArticle ArticleData)
-getArticleBySlugHandler maybeUser slug = do
-    result <- ArticleDb.getCompletedArticleBySlug maybeUser (Slug slug)
+getArticleBySlugHandler mbUser slug = do
+    result <- ArticleDb.getCompletedArticleBySlug mbUser (Slug slug)
     case result of
         Nothing -> throwIO err404
-        Just (article, author, followingAuthor, favorited, favoritedCount) ->
+        Just (ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) ->
             return $ BoxedArticle $ mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount
 
 articleServer :: ServerT ArticleApi AppM

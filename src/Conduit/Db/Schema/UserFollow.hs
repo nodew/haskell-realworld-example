@@ -25,7 +25,7 @@ userFollowSchema = TableSchema
     { name = "follows"
     , schema = Nothing
     , columns = UserFollowEntity
-        { fwsUserId = "fws_user_id"
+        { fwsUserId          = "fws_user_id"
         , fwsFollowingUserId = "fws_follows_user_id"
         }
     }

@@ -36,15 +36,15 @@ instance FromJSON UpdateUserRequest where
     parseJSON = genericParseJSON $ toJsonOptions 3
 
 mapUserToUserResponse :: User -> UserResponse
-mapUserToUserResponse user = UserResponse 
+mapUserToUserResponse user = UserResponse
     { urUsername = getUsername $ userName user
     , urEmail    = getEmailAddress $ userEmail user
     , urBio      = userBio user
     , urImage    = userImage user
     }
 
-type UserApi = AuthProtect "Required" 
-                    :> "user" 
+type UserApi = AuthProtect "Required"
+                    :> "user"
                     :> Get '[JSON] (UserData UserResponse)
           :<|> AuthProtect "Required"
                     :> "user"
@@ -55,19 +55,19 @@ getUserHandler :: User -> AppM (UserData UserResponse)
 getUserHandler = return . UserData . mapUserToUserResponse
 
 updateUserHandler :: User -> UserData UpdateUserRequest -> AppM (UserData UserResponse)
-updateUserHandler user (UserData dto) = do
+updateUserHandler user (UserData user') = do
     succeed <- UserDb.updateUser updatedUser newPassword
     if succeed then
         return $ UserData $ mapUserToUserResponse user
     else
         throwIO err400
     where
-        newName = maybe (userName user) Username (uurUsername dto)
-        newEmail = maybe (userEmail user) EmailAddress (uurUsername dto)
-        newPassword = Password <$> uurPassword dto
-        newBio = fromMaybe (userBio user) (uurBio dto)
-        newImage = fromMaybe (userImage user) (uurImage dto) 
-        updatedUser = user 
+        newName = maybe (userName user) Username (uurUsername user')
+        newEmail = maybe (userEmail user) EmailAddress (uurUsername user')
+        newPassword = Password <$> uurPassword user'
+        newBio = fromMaybe (userBio user) (uurBio user')
+        newImage = fromMaybe (userImage user) (uurImage user')
+        updatedUser = user
             { userName = newName
             , userEmail = newEmail
             , userBio = newBio

@@ -35,15 +35,15 @@ getUserByEmailAndPassword' conn email password = do
     users <- liftIO $ select conn $ getUserByEmailStmt email
     return $ listToMaybe users >>= \case
         user ->
-            if verifyPassword password (_userSalt user) (_userPassword user) then
+            if verifyPassword password (entityUserSalt user) (entityUserPassword user) then
                 Just $ mapUserEntityToUser user
             else
                 Nothing
 
 saveNewUser' :: forall m . MonadIO m => Connection -> User -> Password -> m (Maybe User)
 saveNewUser' conn user password = do
-    (hash, salt) <- liftIO $ hashPassword password
-    let stmt = insertUserStmt (userName user) (userEmail user) hash salt
+    hashedPwdAndSalt <- liftIO $ hashPassword password
+    let stmt = insertUserStmt user hashedPwdAndSalt
     userIds <- liftIO $ insert conn stmt
     return $ listToMaybe userIds >>= \case
         uid -> Just $ user { userId = uid }
