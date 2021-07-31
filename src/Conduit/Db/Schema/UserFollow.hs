@@ -30,6 +30,25 @@ userFollowSchema = TableSchema
         }
     }
 
+createFollowshipStmt :: UserId -> UserId -> Insert Int64
+createFollowshipStmt currentUserId toFollowUserId = Insert
+        { into = userFollowSchema
+        , rows = [ UserFollowEntity
+                    { fwsUserId          = lit currentUserId
+                    , fwsFollowingUserId = lit toFollowUserId
+                    }
+                ]
+        , onConflict = DoNothing
+        , returning = NumberOfRowsAffected
+        }
+
+removeFollowshipStmt :: UserId -> UserId -> Delete Int64
+removeFollowshipStmt currentUserId followingUserId = Delete
+        { from = userFollowSchema
+        , deleteWhere = \o -> (fwsUserId o ==. lit currentUserId) &&. (fwsFollowingUserId o ==. lit followingUserId)
+        , returning = NumberOfRowsAffected
+        }
+
 checkFollowshipStmt :: User -> Expr UserId -> Query (Expr Bool)
 checkFollowshipStmt user following = exists $ do
     a <- each userFollowSchema

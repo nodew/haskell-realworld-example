@@ -7,6 +7,7 @@ import Rel8
 import Data.Aeson
 import Data.Time
 import qualified Data.Text as T
+import Servant
 import Crypto.Random ( MonadRandom(getRandomBytes) )
 import Crypto.Hash ( hashWith, SHA256(SHA256) )
 
@@ -28,7 +29,7 @@ newtype ArticleId = ArticleId { getArticleId :: Int64 }
     deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)
 
 newtype Slug = Slug { getSlug :: Text }
-    deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)
+    deriving newtype (Eq, Show, Read, FromJSON, ToJSON, FromHttpApiData, DBEq, DBType)
 
 newtype TagId = TagId { getTagId :: Int64 }
     deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)

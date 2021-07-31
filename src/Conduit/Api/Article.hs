@@ -87,6 +87,10 @@ mapArticleToArticleData article authorProfile favorited favoritedCount =
         , articleDataAuthor         = authorProfile
         }
 
+mapEnrichedArticleToArticleData :: ArticleDb.EnrichedArticle -> ArticleData
+mapEnrichedArticleToArticleData (ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) =
+    mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount
+
 type ArticleApi = AuthProtect "Optional"
                         :> "articles"
                         :> QueryParam "page"      Int64
@@ -95,19 +99,33 @@ type ArticleApi = AuthProtect "Optional"
                         :> QueryParam "favorited" Text
                         :> QueryParam "tag"       Text
                         :> Get '[JSON] ArticlesResponse
+                :<|> AuthProtect "Optional"
+                        :> "articles"
+                        :> Capture "slug" Slug
+                        :> Get '[JSON] (BoxedArticle ArticleData)
                 :<|> AuthProtect "Required"
                         :> "articles"
                         :> ReqBody '[JSON] (BoxedArticle NewArticleData)
                         :> Post '[JSON] (BoxedArticle ArticleData)
                 :<|> AuthProtect "Required"
                         :> "articles"
-                        :> Capture "slug" Text
+                        :> Capture "slug" Slug
                         :> ReqBody '[JSON] (BoxedArticle UpdateArticleData)
                         :> Put '[JSON] (BoxedArticle ArticleData)
-                :<|> AuthProtect "Optional"
+                :<|> AuthProtect "Required"
                         :> "articles"
-                        :> Capture "slug" Text
-                        :> Get '[JSON] (BoxedArticle ArticleData)
+                        :> Capture "slug" Slug
+                        :> Delete '[JSON] NoContent
+                :<|> AuthProtect "Required"
+                        :> "articles"
+                        :> Capture "slug" Slug
+                        :> "favorite"
+                        :> Post '[JSON] (BoxedArticle ArticleData)
+                :<|> AuthProtect "Required"
+                        :> "articles"
+                        :> Capture "slug" Slug
+                        :> "favorite"
+                        :> Delete '[JSON] (BoxedArticle ArticleData)
 
 getArticlesHandler :: Maybe User
                    -> Maybe Int64
@@ -117,7 +135,7 @@ getArticlesHandler :: Maybe User
                    -> Maybe Text
                    -> AppM ArticlesResponse
 getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
-    (pagedResults, t) <- do
+    (pagedResults, total) <- do
         tagId <- maybe (return Nothing) ArticleDb.getTagId mbTag
         withValidFilter mbTag tagId $ do
             author <- maybe (return Nothing) UserDb.getUserByName (Username <$> mbAuthorName)
@@ -128,11 +146,7 @@ getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
                     let pageParam = ArticleDb.Pagination (fromMaybe 0 mbPage) (fromMaybe 20 mbPageSize)
                     ArticleDb.getPagedArticle mbUser pageParam filters
 
-    return $ ArticlesResponse t
-        $ map
-            (\(ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) ->
-                mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount)
-            pagedResults
+    return $ ArticlesResponse total $ map mapEnrichedArticleToArticleData pagedResults
     where
         isValidParam :: Maybe a -> Maybe b -> Bool
         isValidParam (Just _) Nothing = False
@@ -142,6 +156,22 @@ getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
         withValidFilter a b m
             | isValidParam a b = m
             | otherwise        = return ([], 0)
+
+getArticleBySlugHandler :: Maybe User -> Slug -> AppM (BoxedArticle ArticleData)
+getArticleBySlugHandler mbUser slug = do
+    result <- ArticleDb.getEnrichedArticleBySlug mbUser slug
+    case result of
+        Nothing -> throwIO err404
+        Just enrichedArticle ->
+            return $ BoxedArticle $ mapEnrichedArticleToArticleData enrichedArticle
+
+getArticleByIdHandler :: Maybe User -> ArticleId -> AppM (BoxedArticle ArticleData)
+getArticleByIdHandler mbUser articleId = do
+    result <- ArticleDb.getEnrichedArticleById mbUser articleId
+    case result of
+        Nothing -> throwIO err404
+        Just enrichedArticle ->
+            return $ BoxedArticle $ mapEnrichedArticleToArticleData enrichedArticle
 
 createNewArticleHandler :: User -> BoxedArticle NewArticleData -> AppM (BoxedArticle ArticleData)
 createNewArticleHandler user (BoxedArticle newArticle) = do
@@ -168,21 +198,77 @@ createNewArticleHandler user (BoxedArticle newArticle) = do
         body = newArticleBody newArticle
         tags = newArticleTagList newArticle
 
+updateArticleHandler :: User -> Slug -> BoxedArticle UpdateArticleData -> AppM (BoxedArticle ArticleData)
+updateArticleHandler user slug (BoxedArticle updateData) =
+    ArticleDb.getArticleBySlug slug >>= \case
+        Nothing      -> throwIO err404
+        Just article ->
+            if articleAuthorId article /= userId user
+            then
+                throwIO err403
+            else do
+                currentTime <- liftIO getCurrentTime
+                let updatedArticle = article
+                                    { articleTitle       = fromMaybe (articleTitle article) (updateArticleTitle updateData)
+                                    , articleDescription = fromMaybe (articleDescription article) (updateArticleDescription updateData)
+                                    , articleBody        = fromMaybe (articleBody article) (updateArticleBody updateData)
+                                    , articleTags        = fromMaybe (articleTags article) (updateArticleTagList updateData)
+                                    , articleUpdatedAt   = currentTime
+                                    }
+                ArticleDb.updateArticle updatedArticle
+                favoritedCount <- ArticleDb.getArticleFavoritedCount (articleId article)
+                return $ BoxedArticle $ mapArticleToArticleData updatedArticle (mapUserToUserProfile user False) False favoritedCount
 
-updateArticleHandler :: User -> Text -> BoxedArticle UpdateArticleData -> AppM (BoxedArticle ArticleData)
-updateArticleHandler =
-    undefined
+deleteArticleHandler :: User -> Slug -> AppM NoContent
+deleteArticleHandler user slug = ArticleDb.getArticleBySlug slug >>= \case
+    Nothing      -> throwIO err404
+    Just article ->
+        if articleAuthorId article /= userId user
+        then
+            throwIO err403
+        else do
+            ArticleDb.deleteArticleById (articleId article)
+            return NoContent
 
-getArticleBySlugHandler :: Maybe User -> Text -> AppM (BoxedArticle ArticleData)
-getArticleBySlugHandler mbUser slug = do
-    result <- ArticleDb.getCompletedArticleBySlug mbUser (Slug slug)
-    case result of
-        Nothing -> throwIO err404
-        Just (ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) ->
-            return $ BoxedArticle $ mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount
+favoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
+favoriteArticleHandler user slug =
+    ArticleDb.getArticleBySlug slug >>= \case
+        Nothing      -> throwIO err404
+        Just article ->
+            if articleAuthorId article == userId user
+            then
+                throwIO err403
+            else do
+                isFavorited <- ArticleDb.checkFavorite user (articleId article)
+                if isFavorited
+                then
+                    throwIO err400
+                else do
+                    success <- ArticleDb.addFavorite user (articleId article)
+                    if success then
+                        getArticleByIdHandler (Just user) (articleId article)
+                    else throwIO err400
+
+unFavoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
+unFavoriteArticleHandler user slug =
+    ArticleDb.getArticleBySlug slug >>= \case
+        Nothing      -> throwIO err404
+        Just article -> do
+            isFavorited <- ArticleDb.checkFavorite user (articleId article)
+            if not isFavorited
+            then
+                throwIO err400
+            else do
+                success <- ArticleDb.removeFavorite user (articleId article)
+                if success then
+                    getArticleByIdHandler (Just user) (articleId article)
+                else throwIO err400
 
 articleServer :: ServerT ArticleApi AppM
 articleServer = getArticlesHandler
+            :<|> getArticleBySlugHandler
             :<|> createNewArticleHandler
             :<|> updateArticleHandler
-            :<|> getArticleBySlugHandler
+            :<|> deleteArticleHandler
+            :<|> favoriteArticleHandler
+            :<|> unFavoriteArticleHandler

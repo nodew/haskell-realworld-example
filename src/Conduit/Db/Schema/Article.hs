@@ -8,6 +8,7 @@ module Conduit.Db.Schema.Article where
 
 import RIO
 import Rel8
+import Rel8.Expr.Time
 import Data.Time
 
 import Conduit.Core.User
@@ -61,28 +62,48 @@ insertArticleStmt :: Article -> Insert [ArticleId]
 insertArticleStmt article = Insert
     { into = articleSchema
     , rows = [ ArticleEntity
-                { entityArticleId = unsafeCastExpr $ nextval "articles_article_id_seq"
-                , entityArticleAuthorId = lit (articleAuthorId article)
-                , entityArticleTitle = lit (articleTitle article)
-                , entityArticleSlug = lit (articleSlug article)
+                { entityArticleId          = unsafeCastExpr $ nextval "articles_article_id_seq"
+                , entityArticleAuthorId    = lit (articleAuthorId article)
+                , entityArticleTitle       = lit (articleTitle article)
+                , entityArticleSlug        = lit (articleSlug article)
                 , entityArticleDescription = lit (articleDescription article)
-                , entityArticleBody  = lit (articleBody article)
-                , entityArticleCreatedAt = lit (articleCreatedAt article)
-                , entityArticleUpdatedAt = lit (articleUpdatedAt article)
+                , entityArticleBody        = lit (articleBody article)
+                , entityArticleCreatedAt   = now
+                , entityArticleUpdatedAt   = now
                 }
             ]
     , onConflict = Abort
     , returning = Projection entityArticleId
     }
 
-getArticleEntityByIdStmt :: ArticleId -> Query (ArticleEntity Expr)
+updateArticleStmt :: Article -> Update Int64
+updateArticleStmt article = Update
+    { target = articleSchema
+    , updateWhere = \row -> entityArticleId row ==. lit (articleId article)
+    , set = \row -> row
+        { entityArticleTitle       = lit (articleTitle article)
+        , entityArticleDescription = lit (articleDescription article)
+        , entityArticleBody        = lit (articleBody article)
+        , entityArticleUpdatedAt   = now
+        }
+    , returning = NumberOfRowsAffected
+    }
+
+getArticleEntityByIdStmt :: Expr ArticleId -> Query (ArticleEntity Expr)
 getArticleEntityByIdStmt id = do
     article <- each articleSchema
-    where_ $ entityArticleId article ==. lit id
+    where_ $ entityArticleId article ==. id
     return article
 
-getArticleEntityBySlugStmt :: Slug -> Query (ArticleEntity Expr)
+getArticleEntityBySlugStmt :: Expr Slug -> Query (ArticleEntity Expr)
 getArticleEntityBySlugStmt slug = do
     article <- each articleSchema
-    where_ $ entityArticleSlug article ==. lit slug
+    where_ $ entityArticleSlug article ==. slug
     return article
+
+deleteArticleByIdStmt :: ArticleId -> Delete Int64
+deleteArticleByIdStmt articleId' = Delete
+    { from = articleSchema
+    , deleteWhere = \row -> entityArticleId row ==. lit articleId'
+    , returning = NumberOfRowsAffected
+    }

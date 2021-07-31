@@ -37,3 +37,24 @@ insertArticleTagsStmt articleId tagIds = Insert
     , onConflict = DoNothing
     , returning = NumberOfRowsAffected
     }
+
+
+getAllArticleTagsStmt :: Expr ArticleId -> Query (Expr TagId)
+getAllArticleTagsStmt articleId = do
+    articleTag <- each articleTagSchema
+    where_ $ tgdArticleId articleTag ==. articleId
+    return $ tgdTagId articleTag
+
+deleteAllArticleTagsStmt :: ArticleId -> Delete Int64
+deleteAllArticleTagsStmt articleId' = Delete
+    { from = articleTagSchema
+    , deleteWhere = \row -> tgdArticleId row ==. lit articleId'
+    , returning = NumberOfRowsAffected
+    }
+
+deleteArticleTagStmt :: ArticleId -> TagId -> Delete Int64
+deleteArticleTagStmt articleId tagId = Delete
+    { from = articleTagSchema
+    , deleteWhere = \row -> tgdArticleId row ==. lit articleId &&. tgdTagId row ==. lit tagId
+    , returning = NumberOfRowsAffected
+    }

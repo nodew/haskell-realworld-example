@@ -64,25 +64,12 @@ checkFollowship' conn user following = do
 
 followUser' :: forall m . MonadIO m => Connection -> User -> UserId -> m Bool
 followUser' conn user toFollow = do
-    rows <- liftIO $ insert conn $ Insert
-        { into = userFollowSchema
-        , rows = [ UserFollowEntity
-                    { fwsUserId          = lit (userId user)
-                    , fwsFollowingUserId = lit toFollow
-                    }
-                ]
-        , onConflict = DoNothing
-        , returning = NumberOfRowsAffected
-        }
+    rows <- liftIO $ insert conn $ createFollowshipStmt (userId user) toFollow
     return $ rows == 1
 
 unfollowUser' :: forall m . MonadIO m => Connection -> User -> UserId -> m Bool
 unfollowUser' conn user following = do
-    rows <- liftIO $ delete conn $ Delete
-        { from = userFollowSchema
-        , deleteWhere = \o -> (fwsUserId o ==. lit (userId user)) &&. (fwsFollowingUserId o ==. lit following)
-        , returning = NumberOfRowsAffected
-        }
+    rows <- liftIO $ delete conn $  removeFollowshipStmt (userId user) following
     return $ rows == 1
 
 {--------------------------------------------------------------------------------}
