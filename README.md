@@ -1,15 +1,15 @@
-# conduit-server
+# Haskell-realworld-example
 
-A Haskell implementation of [realworld.io](https://realworld.io)
+A Haskell implementation of **[realworld.io](https://realworld.io)**
 
 ## Tech stack
 
-- RIO for an alternative Prelude
-- Rel8 for interacting with PostgreSQL databases
-- Servant for web api implementation
-- Dhall for configuration
-- cryptonite for Cryptography
-- PostgreSQL
+- **RIO** is an alternative Prelude
+- **Rel8** for interacting with PostgreSQL databases
+- **Servant** for web api implementation
+- **Dhall** for configuration
+- **cryptonite** for Cryptography
+- **PostgreSQL** for persistence
 
 ## Get start
 
