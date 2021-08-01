@@ -6,16 +6,21 @@ import Control.Monad.Trans.Maybe ( MaybeT(..) )
 import Data.Aeson ( defaultOptions, Options(fieldLabelModifier) )
 import Data.List ( head, tail )
 import Data.Char ( toLower )
+import Data.UUID
+import System.Random
 
 toJsonOptions :: Int -> Options
-toJsonOptions prefixLength = 
-    defaultOptions 
+toJsonOptions prefixLength =
+    defaultOptions
         { fieldLabelModifier = headToLower . drop prefixLength }
     where
         headToLower x = toLower (head x) : tail x
 
 hoistMaybe :: Monad m => Maybe a -> MaybeT m a
 hoistMaybe = MaybeT . return
+
+newUUID :: IO UUID
+newUUID = randomIO
 
 flipM :: Monad m => m a -> (a -> b -> m c) -> b -> m c
 flipM ma f arg = ma >>= flip f arg

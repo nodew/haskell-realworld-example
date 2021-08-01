@@ -6,15 +6,17 @@ import RIO
 import Rel8
 import Data.Aeson
 import Data.Time
+import Data.UUID
 
 import Conduit.Core.User
 import Conduit.Core.Article
 
 data Comment = Comment
     { commentId          :: CommentId
+    , commentUUID        :: UUID
     , commentBody        :: Text
     , commentArticleId   :: ArticleId
-    , commentAuthorId    :: UserId 
+    , commentAuthorId    :: UserId
     , commentCreatedAt   :: UTCTime
     , commentUpdatedAt   :: UTCTime
     }

@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY
   , user_email VARCHAR(64) UNIQUE NOT NULL
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS favorited (
 
 CREATE TABLE IF NOT EXISTS comments (
     comment_id SERIAL PRIMARY KEY
+  , comment_uuid UUID UNIQUE DEFAULT uuid_generate_v4()
   , comment_body TEXT
   , comment_createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   , comment_updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP

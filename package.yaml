@@ -26,6 +26,8 @@ dependencies:
 - text
 - bytestring
 - base64-bytestring
+- uuid
+- random
 - data-default
 - aeson
 - lens
