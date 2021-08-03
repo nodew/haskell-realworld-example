@@ -22,3 +22,11 @@ cat conduit.dhall.tpl > conduit.dhall
 stack build
 stack exec conduit-server-exe
 ```
+
+## TODO
+
+- [] Add integration tests
+- [] Generate swagger api specification
+- [] Add DB migrator
+- [] Build full static Haskell binaries with docker
+- [] Support docker compose
