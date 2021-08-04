@@ -81,7 +81,7 @@ registerHandler :: UserData NewUser -> AppM (UserData LoginResponse)
 registerHandler (UserData u) = do
     result <- UserDb.saveNewUser newUser password
     case result of
-        Nothing -> throwIO err401
+        Nothing -> throwIO err400
         Just user -> UserData <$> genUserResponse user
     where
         username = Username $ newUserUsername u

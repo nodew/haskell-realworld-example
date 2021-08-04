@@ -44,6 +44,7 @@ dependencies:
 - wai-extra
 - warp
 - hasql
+- hasql-transaction
 - time
 - extra
 

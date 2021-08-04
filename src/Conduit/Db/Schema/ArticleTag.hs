@@ -33,7 +33,7 @@ articleTagSchema = TableSchema
 insertArticleTagsStmt :: ArticleId -> [TagId] -> Insert Int64
 insertArticleTagsStmt articleId tagIds = Insert
     { into = articleTagSchema
-    , rows = map (ArticleTagEntity (lit articleId) . lit) tagIds
+    , rows = values $ map (ArticleTagEntity (lit articleId) . lit) tagIds
     , onConflict = DoNothing
     , returning = NumberOfRowsAffected
     }
@@ -48,13 +48,15 @@ getAllArticleTagsStmt articleId = do
 deleteAllArticleTagsStmt :: ArticleId -> Delete Int64
 deleteAllArticleTagsStmt articleId' = Delete
     { from = articleTagSchema
-    , deleteWhere = \row -> tgdArticleId row ==. lit articleId'
+    , using = pure()
+    , deleteWhere = \_ row -> tgdArticleId row ==. lit articleId'
     , returning = NumberOfRowsAffected
     }
 
 deleteArticleTagStmt :: ArticleId -> TagId -> Delete Int64
 deleteArticleTagStmt articleId tagId = Delete
     { from = articleTagSchema
-    , deleteWhere = \row -> tgdArticleId row ==. lit articleId &&. tgdTagId row ==. lit tagId
+    , using = pure ()
+    , deleteWhere = \_ row -> tgdArticleId row ==. lit articleId &&. tgdTagId row ==. lit tagId
     , returning = NumberOfRowsAffected
     }

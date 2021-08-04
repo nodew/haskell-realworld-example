@@ -88,16 +88,16 @@ getUserByEmailStmt email = do
 insertUserStmt :: User -> (HashedPassword, Salt) -> Insert [UserId]
 insertUserStmt user (hash, salt) = Insert
     { into = userSchema
-    , rows = [ UserEntity
-                { entityUserId       = unsafeCastExpr $ nextval "users_user_id_seq"
-                , entityUserName     = lit (userName user)
-                , entityUserEmail    = lit (userEmail user)
-                , entityUserBio      = lit (userBio user)
-                , entityUserImage    = lit (userImage user)
-                , entityUserPassword = lit hash
-                , entityUserSalt     = lit salt
-                }
-            ]
+    , rows = values [ UserEntity
+                        { entityUserId       = unsafeCastExpr $ nextval "users_user_id_seq"
+                        , entityUserName     = lit (userName user)
+                        , entityUserEmail    = lit (userEmail user)
+                        , entityUserBio      = lit (userBio user)
+                        , entityUserImage    = lit (userImage user)
+                        , entityUserPassword = lit hash
+                        , entityUserSalt     = lit salt
+                        }
+                    ]
     , onConflict = DoNothing
     , returning = Projection entityUserId
     }
@@ -106,11 +106,12 @@ updateUserStmt :: User -> Maybe (HashedPassword, Salt) -> Update Int64
 updateUserStmt user mbPassword =
     Update
         { target = userSchema
-        , updateWhere = \o -> entityUserId o ==. lit (userId user)
+        , from = pure ()
+        , updateWhere = \_ o -> entityUserId o ==. lit (userId user)
         , set = setter
         , returning = NumberOfRowsAffected
         }
     where
-        setter = case mbPassword of
+        setter _ = case mbPassword of
             Just password -> updatePasswordAndSalt password . updateUserProperties user
             _             -> updateUserProperties user

@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: rel8-1.0.0.1@sha256:44a53e2c9b295da0c4659f335f8b3e7ddbe9564727e247a1a1c616dc6d089812,5059
+    hackage: rel8-1.1.0.0@sha256:c31ad1bfbd7446ccbe39075d66dc89c8de3b3788c144247c9de269cfc55e1428,5023
     pantry-tree:
-      size: 8721
-      sha256: 9b715c4dba46d2f8387507a04ea95205dc56e98660555a23b28a4550d7b40840
+      size: 9096
+      sha256: 11aca3bab6462b5997acb4a9969625e839d5369ff1c7cb687db86a729d5b4c00
   original:
-    hackage: rel8-1.0.0.1
+    hackage: rel8-1.1.0.0
 - completed:
     hackage: hasql-1.4.5.1@sha256:1d202eeb12a409c1d7f75c5440780ff3caed2cd8f470ec80f01748e0b9e388f0,6581
     pantry-tree:
@@ -34,7 +34,7 @@ packages:
     hackage: servant-auth-server-0.4.6.0
 snapshots:
 - completed:
-    size: 585393
-    url: https://mirrors.tuna.tsinghua.edu.cn/stackage/stackage-snapshots/lts/18/0.yaml
-    sha256: c632012da648385b9fa3c29f4e0afd56ead299f1c5528ee789058be410e883c0
-  original: lts-18.0
+    size: 585817
+    url: https://mirrors.tuna.tsinghua.edu.cn/stackage/stackage-snapshots/lts/18/5.yaml
+    sha256: 22d24d0dacad9c1450b9a174c28d203f9bb482a2a8da9710a2f2a9f4afee2887
+  original: lts-18.5

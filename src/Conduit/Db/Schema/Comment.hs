@@ -77,7 +77,7 @@ getCommentsByArticleIdStmt articleId = do
 insertCommentStmt :: Comment -> Insert [CommentId]
 insertCommentStmt comment = Insert
     { into = commentSchema
-    , rows = [
+    , rows = values [
         CommentEntity
             { entityCommentId        = unsafeCastExpr $ nextval "comments_comment_id_seq"
             , entityCommentUUID      = lit $ commentUUID comment
@@ -95,13 +95,15 @@ insertCommentStmt comment = Insert
 deleteCommentStmt :: CommentId -> Delete Int64
 deleteCommentStmt commentId = Delete
     { from = commentSchema
-    , deleteWhere = \row -> entityCommentId row ==. lit commentId
+    , using = pure ()
+    , deleteWhere = \_ row -> entityCommentId row ==. lit commentId
     , returning = NumberOfRowsAffected
     }
 
 deleteCommentByArticleIdStmt :: ArticleId -> Delete Int64
 deleteCommentByArticleIdStmt articleId = Delete
     { from = commentSchema
-    , deleteWhere = \row -> entityCommentArticleId row ==. lit articleId
+    , using = pure ()
+    , deleteWhere = \_ row -> entityCommentArticleId row ==. lit articleId
     , returning = NumberOfRowsAffected
     }

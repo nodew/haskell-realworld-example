@@ -61,17 +61,17 @@ mapArticleEntityToArticle entity = Article
 insertArticleStmt :: Article -> Insert [ArticleId]
 insertArticleStmt article = Insert
     { into = articleSchema
-    , rows = [ ArticleEntity
-                { entityArticleId          = unsafeCastExpr $ nextval "articles_article_id_seq"
-                , entityArticleAuthorId    = lit (articleAuthorId article)
-                , entityArticleTitle       = lit (articleTitle article)
-                , entityArticleSlug        = lit (articleSlug article)
-                , entityArticleDescription = lit (articleDescription article)
-                , entityArticleBody        = lit (articleBody article)
-                , entityArticleCreatedAt   = now
-                , entityArticleUpdatedAt   = now
-                }
-            ]
+    , rows = values [ ArticleEntity
+                        { entityArticleId          = unsafeCastExpr $ nextval "articles_article_id_seq"
+                        , entityArticleAuthorId    = lit (articleAuthorId article)
+                        , entityArticleTitle       = lit (articleTitle article)
+                        , entityArticleSlug        = lit (articleSlug article)
+                        , entityArticleDescription = lit (articleDescription article)
+                        , entityArticleBody        = lit (articleBody article)
+                        , entityArticleCreatedAt   = now
+                        , entityArticleUpdatedAt   = now
+                        }
+                    ]
     , onConflict = Abort
     , returning = Projection entityArticleId
     }
@@ -79,8 +79,9 @@ insertArticleStmt article = Insert
 updateArticleStmt :: Article -> Update Int64
 updateArticleStmt article = Update
     { target = articleSchema
-    , updateWhere = \row -> entityArticleId row ==. lit (articleId article)
-    , set = \row -> row
+    , from = pure ()
+    , updateWhere = \_ row -> entityArticleId row ==. lit (articleId article)
+    , set = \_ row -> row
         { entityArticleTitle       = lit (articleTitle article)
         , entityArticleDescription = lit (articleDescription article)
         , entityArticleBody        = lit (articleBody article)
@@ -104,6 +105,7 @@ getArticleEntityBySlugStmt slug = do
 deleteArticleByIdStmt :: ArticleId -> Delete Int64
 deleteArticleByIdStmt articleId' = Delete
     { from = articleSchema
-    , deleteWhere = \row -> entityArticleId row ==. lit articleId'
+    , using = pure ()
+    , deleteWhere = \_ row -> entityArticleId row ==. lit articleId'
     , returning = NumberOfRowsAffected
     }

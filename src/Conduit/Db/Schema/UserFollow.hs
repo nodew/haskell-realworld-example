@@ -31,13 +31,15 @@ userFollowSchema = TableSchema
     }
 
 createFollowshipStmt :: UserId -> UserId -> Insert Int64
-createFollowshipStmt currentUserId toFollowUserId = Insert
+createFollowshipStmt currentUserId toFollowUserId =
+    Insert
         { into = userFollowSchema
-        , rows = [ UserFollowEntity
-                    { fwsUserId          = lit currentUserId
-                    , fwsFollowingUserId = lit toFollowUserId
-                    }
-                ]
+        , rows = values
+            [ UserFollowEntity
+                { fwsUserId = lit currentUserId
+                , fwsFollowingUserId = lit toFollowUserId
+                }
+            ]
         , onConflict = DoNothing
         , returning = NumberOfRowsAffected
         }
@@ -45,7 +47,8 @@ createFollowshipStmt currentUserId toFollowUserId = Insert
 removeFollowshipStmt :: UserId -> UserId -> Delete Int64
 removeFollowshipStmt currentUserId followingUserId = Delete
         { from = userFollowSchema
-        , deleteWhere = \o -> (fwsUserId o ==. lit currentUserId) &&. (fwsFollowingUserId o ==. lit followingUserId)
+        , using = pure ()
+        , deleteWhere = \_ o -> (fwsUserId o ==. lit currentUserId) &&. (fwsFollowingUserId o ==. lit followingUserId)
         , returning = NumberOfRowsAffected
         }
 

@@ -35,7 +35,7 @@ favoriteSchema = TableSchema
 addFavoritedArticleStmt :: UserId -> ArticleId -> Insert Int64
 addFavoritedArticleStmt currentUserId targetArticleId = Insert
     { into = favoriteSchema
-    , rows = [ FavoriteEntity (lit currentUserId) (lit targetArticleId) ]
+    , rows = values [ FavoriteEntity (lit currentUserId) (lit targetArticleId) ]
     , onConflict = DoNothing
     , returning = NumberOfRowsAffected
     }
@@ -43,14 +43,16 @@ addFavoritedArticleStmt currentUserId targetArticleId = Insert
 removeFavoritedArticleStmt :: UserId -> ArticleId -> Delete Int64
 removeFavoritedArticleStmt userId articleId' = Delete
     { from = favoriteSchema
-    , deleteWhere = \row -> favoriteArticleId row ==. lit articleId' &&. favoriteUserId row ==. lit userId
+    , using = pure ()
+    , deleteWhere = \_ row -> favoriteArticleId row ==. lit articleId' &&. favoriteUserId row ==. lit userId
     , returning = NumberOfRowsAffected
     }
 
 removeAllFavoritesByArticleIdStmt :: ArticleId -> Delete Int64
 removeAllFavoritesByArticleIdStmt articleId' = Delete
     { from = favoriteSchema
-    , deleteWhere = \row -> favoriteArticleId row ==. lit articleId'
+    , using = pure ()
+    , deleteWhere = \_ row -> favoriteArticleId row ==. lit articleId'
     , returning = NumberOfRowsAffected
     }
 
