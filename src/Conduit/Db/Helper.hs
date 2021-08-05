@@ -5,6 +5,7 @@ import RIO
 import Hasql.Transaction ( Transaction, condemn, statement )
 import qualified Hasql.Session as Session
 import qualified Hasql.Transaction.Sessions as Hasql
+import Hasql.Statement (Statement)
 
 import Conduit.App
 
@@ -14,3 +15,6 @@ withTransaction f = do
     f $ \m -> do
         e <- liftIO $ Session.run (Hasql.transaction Hasql.Serializable Hasql.Write m) connection
         either throwIO pure e
+
+runStmt :: Statement () b -> Transaction b
+runStmt = statement ()

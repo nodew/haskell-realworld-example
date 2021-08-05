@@ -5,9 +5,6 @@ module Conduit.Db.User where
 
 import RIO
 import Rel8
-import Hasql.Connection
-import Hasql.Transaction (statement)
-import Control.Applicative
 
 import Conduit.App
 import Conduit.Core.User
@@ -19,25 +16,25 @@ import Conduit.Db.Helper
 getUserById :: UserId -> AppM (Maybe User)
 getUserById uid = withTransaction $ \transaction -> do
     users <- transaction $ do
-        statement () $ select $ getUserByIdStmt (litExpr uid)
+        runStmt $ select $ getUserByIdStmt (litExpr uid)
     return $ listToMaybe $ map mapUserEntityToUser users
 
 getUserByName :: Username -> AppM (Maybe User)
 getUserByName username = withTransaction $ \transaction -> do
     users <- transaction $ do
-        statement () $ select $ getUserByNameStmt username
+        runStmt $ select $ getUserByNameStmt username
     return $ listToMaybe $ map mapUserEntityToUser users
 
 getUserByEmail :: EmailAddress -> AppM (Maybe User)
 getUserByEmail email = withTransaction $ \transaction -> do
     users <- transaction $ do
-        statement () $ select $ getUserByEmailStmt email
+        runStmt $ select $ getUserByEmailStmt email
     return $ listToMaybe $ map mapUserEntityToUser users
 
 getUserByEmailAndPassword :: EmailAddress -> Password  -> AppM (Maybe User)
 getUserByEmailAndPassword email password = withTransaction $ \transaction -> do
     users <- transaction $ do
-        statement () $ select $ getUserByEmailStmt email
+        runStmt $ select $ getUserByEmailStmt email
     return $ verifyPassword' =<< listToMaybe users
     where
         verifyPassword' user =
@@ -52,7 +49,7 @@ saveNewUser user password = withTransaction $ \transaction -> do
     hashedPwdAndSalt <- liftIO $ hashPassword password
     let stmt = insertUserStmt user hashedPwdAndSalt
     userIds <- transaction $ do
-        statement () $ insert stmt
+        runStmt $ insert stmt
     return $ listToMaybe userIds >>= \case
         uid -> Just $ user { userId = uid }
 
@@ -63,23 +60,23 @@ updateUser user mbPassword = withTransaction $ \transaction -> do
             Just password -> liftIO $ Just <$> hashPassword password
             _             -> return Nothing
     rows <- transaction $ do
-        statement () $ update $ updateUserStmt user hashAndSalt
+        runStmt $ update $ updateUserStmt user hashAndSalt
     return $ rows > 0
 
 checkFollowship :: User -> UserId -> AppM Bool
 checkFollowship user following = withTransaction $ \transaction -> do
     exists <- transaction $ do
-        statement () $ select $ checkFollowshipStmt user (litExpr following)
+        runStmt $ select $ checkFollowshipStmt user (litExpr following)
     return $ exists == [True]
 
 followUser :: User -> UserId -> AppM Bool
 followUser user toFollow = withTransaction $ \transaction -> do
     rows <- transaction $ do
-        statement () $ insert $ createFollowshipStmt (userId user) toFollow
+        runStmt $ insert $ createFollowshipStmt (userId user) toFollow
     return $ rows == 1
 
 unfollowUser :: User -> UserId -> AppM Bool
 unfollowUser user following = withTransaction $ \transaction -> do
     rows <- transaction $ do
-        statement () $ delete $ removeFollowshipStmt (userId user) following
+        runStmt $ delete $ removeFollowshipStmt (userId user) following
     return $ rows == 1

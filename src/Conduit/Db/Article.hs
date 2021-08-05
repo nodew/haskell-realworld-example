@@ -6,11 +6,9 @@ module Conduit.Db.Article where
 
 import RIO
 import Rel8
-import Hasql.Connection
 import Hasql.Transaction (statement, Transaction)
 import Data.Functor.Contravariant
 import Data.List (head, (\\))
-import Control.Monad.Trans.Maybe
 
 import Conduit.Core.User
 import Conduit.Core.Article
@@ -22,7 +20,6 @@ import Conduit.Db.Schema.Favorite
 import Conduit.Db.Schema.UserFollow
 import Conduit.Db.Helper
 import Conduit.App
-import Conduit.Util
 
 data ArticleFilters = ArticleFilters
     { getTagFilter      :: Maybe TagId
@@ -53,7 +50,7 @@ mapArticleEntityWithTagsToArticle (article, tags) =
     in article' { articleTags = map entityTagText tags}
 
 enrichedArticle :: (ArticleEntity Result, EnrichedArticleResult)
-                                  -> EnrichedArticle
+                -> EnrichedArticle
 enrichedArticle (articleEntity, (mbTags, authorEntity, followingAuthor, favorited, favoritedCount)) =
         EnrichedArticle
             (mapArticleEntityWithTagsToArticle (articleEntity, fromMaybe [] mbTags))
@@ -117,17 +114,17 @@ getArticleEnrichedDataStmt mbUser article = do
 createArticle :: Article -> AppM (Maybe Article)
 createArticle article = withTransaction $ \transaction -> do
     articleId'' <- transaction $ do
-        articleId' <- statement () $ listToMaybe <$> insert (insertArticleStmt article)
+        articleId' <- runStmt $ listToMaybe <$> insert (insertArticleStmt article)
         case articleId' of
             Nothing -> return Nothing
             Just articleId'' -> do
                 tagIds <- mapM getOrCreateTagId' (articleTags article)
-                _ <- statement () $ insert $ insertArticleTagsStmt articleId'' tagIds
+                _ <- runStmt $ insert $ insertArticleTagsStmt articleId'' tagIds
                 return $ Just articleId''
     return $ articleId'' >>= \articleId''' -> Just $ article { articleId = articleId''' }
 
 getTagId' :: Text -> Transaction (Maybe TagId)
-getTagId' tag = statement () $ listToMaybe <$> select (getTagIdStmt tag)
+getTagId' tag = runStmt $ listToMaybe <$> select (getTagIdStmt tag)
 
 getTagId :: Text -> AppM (Maybe TagId)
 getTagId tag = withTransaction $ \transaction -> transaction $ getTagId' tag
@@ -137,12 +134,12 @@ getOrCreateTagId' tag = do
     tagId <- getTagId' tag
     case tagId of
         Just tagId' -> return tagId'
-        Nothing -> statement () $ head <$> insert (insertTagStmt tag)
+        Nothing -> runStmt $ head <$> insert (insertTagStmt tag)
 
 getEnrichedArticleById :: Maybe User -> ArticleId -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleById mbUser id = withTransaction $ \transaction -> do
     records <- transaction $ do
-        statement () $ select $ do
+        runStmt $ select $ do
             article <- getArticleEntityByIdStmt $ litExpr id
             enrichedData <- getArticleEnrichedDataStmt mbUser article
             return (article, enrichedData)
@@ -150,13 +147,13 @@ getEnrichedArticleById mbUser id = withTransaction $ \transaction -> do
 
 getArticleById :: ArticleId -> AppM (Maybe Article)
 getArticleById id = withTransaction $ \transaction -> do
-    records <- transaction $ statement () $ listToMaybe <$> select (getArticleEntityByIdStmt $ litExpr id)
+    records <- transaction $ runStmt $ listToMaybe <$> select (getArticleEntityByIdStmt $ litExpr id)
     return $ mapArticleEntityToArticle <$> records
 
 getEnrichedArticleBySlug :: Maybe User -> Slug -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleBySlug mbUser slug = withTransaction $ \transaction -> do
     records <- transaction $ do
-        statement () $ select $ do
+        runStmt $ select $ do
             article <- getArticleEntityBySlugStmt $ litExpr slug
             enrichedData <- getArticleEnrichedDataStmt mbUser article
             return (article, enrichedData)
@@ -164,16 +161,16 @@ getEnrichedArticleBySlug mbUser slug = withTransaction $ \transaction -> do
 
 getArticleBySlug :: Slug -> AppM (Maybe Article)
 getArticleBySlug slug = withTransaction $ \transaction -> do
-    records <- transaction $ statement () $ listToMaybe <$> select (getArticleEntityBySlugStmt $ litExpr slug)
+    records <- transaction $ runStmt $ listToMaybe <$> select (getArticleEntityBySlugStmt $ litExpr slug)
     return $ mapArticleEntityToArticle <$> records
 
 getPagedArticle :: Maybe User -> Pagination -> ArticleFilters -> AppM ([EnrichedArticle], Int64)
 getPagedArticle mbUser p filters = withTransaction $ \transaction -> do
     (total, pagedResults) <- transaction $ do
-        total <- statement () $ select $ aggregate $ do
+        total <- runStmt $ select $ aggregate $ do
             _ <- getAllArticleStmt filters
             return countStar
-        pagedResults <- statement () $ select $ do
+        pagedResults <- runStmt $ select $ do
             article <- getPagedArticleStmt (pageSize p) (pageNum p) filters
             enrichedData <- getArticleEnrichedDataStmt mbUser article
             return (article, enrichedData)
@@ -182,41 +179,41 @@ getPagedArticle mbUser p filters = withTransaction $ \transaction -> do
 
 checkFavorite :: User -> ArticleId  -> AppM Bool
 checkFavorite user articleId = withTransaction $ \transaction -> do
-    exists <- transaction $ statement () $ select $ checkFavoriteStmt (userId user) (litExpr articleId)
+    exists <- transaction $ runStmt $ select $ checkFavoriteStmt (userId user) (litExpr articleId)
     return $ exists == [True]
 
 addFavorite :: User -> ArticleId -> AppM Bool
 addFavorite user articleId = withTransaction $ \transaction -> do
-    rowsEffected <- transaction $ statement () $ insert $ addFavoritedArticleStmt (userId user) articleId
+    rowsEffected <- transaction $ runStmt $ insert $ addFavoritedArticleStmt (userId user) articleId
     return $ rowsEffected == 1
 
 removeFavorite :: User -> ArticleId -> AppM Bool
 removeFavorite user articleId = withTransaction $ \transaction -> do
-    rowsEffected <- transaction $ statement () $ delete $ removeFavoritedArticleStmt (userId user) articleId
+    rowsEffected <- transaction $ runStmt $ delete $ removeFavoritedArticleStmt (userId user) articleId
     return $ rowsEffected == 1
 
 deleteArticleById :: ArticleId -> AppM Bool
 deleteArticleById articleId = withTransaction $ \transaction -> do
     rowsEffected <- transaction $ do
-        _ <- statement () $ delete $ deleteAllArticleTagsStmt articleId
-        _ <- statement () $ delete $ removeAllFavoritesByArticleIdStmt articleId
-        statement () $ delete $ deleteArticleByIdStmt articleId
+        _ <- runStmt $ delete $ deleteAllArticleTagsStmt articleId
+        _ <- runStmt $ delete $ removeAllFavoritesByArticleIdStmt articleId
+        runStmt $ delete $ deleteArticleByIdStmt articleId
     return $ rowsEffected == 1
 
 deleteArticleTag' :: ArticleId -> TagId -> Transaction Int64
-deleteArticleTag' articleId tagId = statement () $ delete $ deleteArticleTagStmt articleId tagId
+deleteArticleTag' articleId tagId = runStmt $ delete $ deleteArticleTagStmt articleId tagId
 
 updateArticle :: Article -> AppM Bool
 updateArticle article = withTransaction $ \transaction -> do
     rowsEffected <- transaction $ do
         currentTagIds <- mapM getOrCreateTagId' (articleTags article)
-        allLinkedTagIds <- statement () $ select $ getAllArticleTagsStmt (litExpr $ articleId article)
+        allLinkedTagIds <- runStmt $ select $ getAllArticleTagsStmt (litExpr $ articleId article)
         mapM_ (deleteArticleTag' (articleId article)) $ allLinkedTagIds \\ currentTagIds
-        statement () $ insert $ insertArticleTagsStmt (articleId article) currentTagIds
-        statement () $ update $ updateArticleStmt article
+        runStmt $ insert $ insertArticleTagsStmt (articleId article) currentTagIds
+        runStmt $ update $ updateArticleStmt article
     return $ rowsEffected == 1
 
 getArticleFavoritedCount :: ArticleId -> AppM Int64
 getArticleFavoritedCount articleId = withTransaction $ \transaction -> do
-    count <- transaction $ statement () $ select $ getFavoritedCountOfArticleStmt (litExpr articleId)
+    count <- transaction $ runStmt $ select $ getFavoritedCountOfArticleStmt (litExpr articleId)
     return $ fromMaybe 0 . listToMaybe $ count
