@@ -15,7 +15,7 @@ import Conduit.Config
 
 loadTestEnv :: IO AppEnv
 loadTestEnv = do
-    cfg <- input auto "./conduit.dhall"
+    cfg <- input auto "./conduit-test.dhall"
     let postgresSettings = mapDbConfigToSettings $ cfgDb cfg
     let jwtKey = fromOctets . encodeUtf8 . cfgJwtSecret $ cfg
     conn <- acquire postgresSettings
