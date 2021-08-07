@@ -75,4 +75,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - http-types
+    - hspec
+    - hspec-wai
+    - QuickCheck
     - conduit-server

@@ -45,10 +45,13 @@ data LoginResponse = LoginResponse
     , loginRespToken    :: Text
     , loginRespBio      :: Text
     , loginRespImage    :: Text
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance ToJSON LoginResponse where
     toJSON = genericToJSON $ toJsonOptions 9
+
+instance FromJSON LoginResponse where
+    parseJSON = genericParseJSON $ toJsonOptions 9
 
 mapUserToLoginResponse :: User -> Text -> LoginResponse
 mapUserToLoginResponse user token = LoginResponse

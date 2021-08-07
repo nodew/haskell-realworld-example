@@ -8,7 +8,7 @@ import Conduit.Util
 import Conduit.Core.User
 
 newtype UserData a = UserData { userData :: a }
-    deriving (Show, Generic)
+    deriving (Eq, Show, Generic)
 
 instance ToJSON a => ToJSON (UserData a) where
     toJSON (UserData a) = object ["user" .= a]
@@ -29,7 +29,7 @@ instance FromJSON a => FromJSON (Profile a) where
         a <- o .: "profile"
         return (Profile a)
 
-data UserProfile = UserProfile 
+data UserProfile = UserProfile
     { profileUsername  :: Text
     , profileBio       :: Text
     , profileImage     :: Text

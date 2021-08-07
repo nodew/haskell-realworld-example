@@ -4,3 +4,5 @@ cradle:
       component: "conduit-server:lib"
     - path: "./app"
       component: "conduit-server:exe:conduit-server-exe"
+    - path: "./test"
+      component: "conduit-server:test:conduit-server-test"
