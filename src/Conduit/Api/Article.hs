@@ -159,19 +159,15 @@ getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
 
 getArticleBySlugHandler :: Maybe User -> Slug -> AppM (BoxedArticle ArticleData)
 getArticleBySlugHandler mbUser slug = do
-    result <- ArticleDb.getEnrichedArticleBySlug mbUser slug
-    case result of
-        Nothing -> throwIO err404
-        Just enrichedArticle ->
-            return $ BoxedArticle $ mapEnrichedArticleToArticleData enrichedArticle
+    ArticleDb.getEnrichedArticleBySlug mbUser slug
+        >>= maybe (throwIO err404)
+                  (return . BoxedArticle . mapEnrichedArticleToArticleData)
 
 getArticleByIdHandler :: Maybe User -> ArticleId -> AppM (BoxedArticle ArticleData)
-getArticleByIdHandler mbUser articleId = do
-    result <- ArticleDb.getEnrichedArticleById mbUser articleId
-    case result of
-        Nothing -> throwIO err404
-        Just enrichedArticle ->
-            return $ BoxedArticle $ mapEnrichedArticleToArticleData enrichedArticle
+getArticleByIdHandler mbUser articleId =
+    ArticleDb.getEnrichedArticleById mbUser articleId
+        >>= maybe (throwIO err404)
+                  (return . BoxedArticle . mapEnrichedArticleToArticleData)
 
 createNewArticleHandler :: User -> BoxedArticle NewArticleData -> AppM (BoxedArticle ArticleData)
 createNewArticleHandler user (BoxedArticle newArticle) = do
@@ -188,10 +184,8 @@ createNewArticleHandler user (BoxedArticle newArticle) = do
                                             , articleCreatedAt   = currentTime
                                             , articleUpdatedAt   = currentTime
                                             }
-    case article of
-        Nothing       -> throwIO err400
-        Just article' ->
-            return $ BoxedArticle $ mapArticleToArticleData article' (mapUserToUserProfile user False) False 0
+    flipMaybe article (throwIO err400) $ \article' ->
+        return $ BoxedArticle $ mapArticleToArticleData article' (mapUserToUserProfile user False) False 0
     where
         title = newArticleTitle newArticle
         description = newArticleDescription newArticle
@@ -200,9 +194,9 @@ createNewArticleHandler user (BoxedArticle newArticle) = do
 
 updateArticleHandler :: User -> Slug -> BoxedArticle UpdateArticleData -> AppM (BoxedArticle ArticleData)
 updateArticleHandler user slug (BoxedArticle updateData) =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing      -> throwIO err404
-        Just article ->
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) updateArticle
+    where
+        updateArticle article =
             if articleAuthorId article /= userId user
             then
                 throwIO err403
@@ -220,21 +214,22 @@ updateArticleHandler user slug (BoxedArticle updateData) =
                 return $ BoxedArticle $ mapArticleToArticleData updatedArticle (mapUserToUserProfile user False) False favoritedCount
 
 deleteArticleHandler :: User -> Slug -> AppM NoContent
-deleteArticleHandler user slug = ArticleDb.getArticleBySlug slug >>= \case
-    Nothing      -> throwIO err404
-    Just article ->
-        if articleAuthorId article /= userId user
-        then
-            throwIO err403
-        else do
-            ArticleDb.deleteArticleById (articleId article)
-            return NoContent
+deleteArticleHandler user slug =
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) deleteArticle
+    where
+        deleteArticle article =
+            if articleAuthorId article /= userId user
+            then
+                throwIO err403
+            else do
+                ArticleDb.deleteArticleById (articleId article)
+                return NoContent
 
 favoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
 favoriteArticleHandler user slug =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing      -> throwIO err404
-        Just article ->
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) favoriteArticle
+    where
+        favoriteArticle article =
             if articleAuthorId article == userId user
             then
                 throwIO err403
@@ -251,9 +246,9 @@ favoriteArticleHandler user slug =
 
 unFavoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
 unFavoriteArticleHandler user slug =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing      -> throwIO err404
-        Just article -> do
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) unFavoriteArticle
+    where
+        unFavoriteArticle article = do
             isFavorited <- ArticleDb.checkFavorite user (articleId article)
             if not isFavorited
             then

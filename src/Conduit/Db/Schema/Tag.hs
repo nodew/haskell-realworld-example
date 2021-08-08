@@ -40,6 +40,6 @@ insertTagStmt :: Text -> Insert [TagId]
 insertTagStmt tag = Insert
     { into = tagSchema
     , rows = values [TagEntity (unsafeCastExpr $ nextval "tags_tag_id_seq")  (lit tag)]
-    , onConflict = DoNothing
+    , onConflict = Abort
     , returning = Projection entityTagId
     }

@@ -22,8 +22,8 @@ newtype TagsResponse = TagsResponse
 type TagApi = "tags" :> Get '[JSON] TagsResponse
 
 getAllTagsHandler :: AppM TagsResponse
-getAllTagsHandler = withTransaction $ \transaction -> do
-    tags <- transaction $ statement () $ select $ each tagSchema
+getAllTagsHandler = do
+    tags <- runSimpleStmt $ select $ each tagSchema
     return $ TagsResponse $ map entityTagText tags
 
 tagServer :: ServerT TagApi AppM

@@ -73,19 +73,14 @@ type AuthApi = "users"
                     :> Post '[JSON] (UserData LoginResponse)
 
 loginHandler :: UserData LoginUser -> AppM (UserData LoginResponse)
-loginHandler (UserData u) = do
-    result <- UserDb.getUserByEmailAndPassword (EmailAddress $ loginEmail u) (Password $ loginPassword u)
-    case result of
-        Nothing ->
-            throwIO err401
-        Just user -> UserData <$> genUserResponse user
+loginHandler (UserData u) =
+    UserDb.getUserByEmailAndPassword (EmailAddress $ loginEmail u) (Password $ loginPassword u)
+        >>= maybe (throwIO err401) (fmap UserData . genUserResponse)
 
 registerHandler :: UserData NewUser -> AppM (UserData LoginResponse)
-registerHandler (UserData u) = do
-    result <- UserDb.saveNewUser newUser password
-    case result of
-        Nothing -> throwIO err400
-        Just user -> UserData <$> genUserResponse user
+registerHandler (UserData u) =
+    UserDb.saveNewUser newUser password
+        >>= maybe (throwIO err400) (fmap UserData . genUserResponse)
     where
         username = Username $ newUserUsername u
         email = EmailAddress $ newUserEmail u
@@ -97,10 +92,8 @@ genUserResponse user = do
     let username = userName user
     jwtKey <- getJwtKey
     claims <- liftIO $ mkClaims username
-    signedToken <- liftIO $ signJwt jwtKey claims
-    case signedToken of
-        Left _ -> throwIO err422
-        Right token -> return $ mapUserToLoginResponse user token
+    liftIO $ signJwt jwtKey claims
+        >>= either (\_ -> throwIO err422) (return . mapUserToLoginResponse user)
 
 authServer :: ServerT AuthApi AppM
 authServer = loginHandler :<|> registerHandler

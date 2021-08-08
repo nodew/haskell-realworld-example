@@ -75,24 +75,24 @@ type CommentApi = "articles"
                         :<|> AuthProtect "Required"
                                 :> Capture "commentId" UUID
                                 :> Delete '[JSON] NoContent
-                    )
+                        )
 
 getAllComments :: Slug -> Maybe User -> AppM CommentsResponse
 getAllComments slug mbUser =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing -> throwIO err404
-        Just article -> do
-            comments <- CommentDb.getEnrichedCommentsByArticleId mbUser (articleId article)
-            return $ CommentsResponse $ map mapEnrichedCommentToCommentData comments
+    ArticleDb.getArticleBySlug slug
+        >>= maybe (throwIO err404)
+                  (\article -> do
+                        comments <- CommentDb.getEnrichedCommentsByArticleId mbUser (articleId article)
+                        return $ CommentsResponse $ map mapEnrichedCommentToCommentData comments)
 
 createComment :: Slug
               -> User
               -> BoxedComment NewCommentData
               -> AppM (BoxedComment CommentData)
 createComment slug user (BoxedComment newComment) =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing -> throwIO err404
-        Just article -> do
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) createComment
+    where
+        createComment article = do
             currentTime <- liftIO getCurrentTime
             uuid <- liftIO newUUID
             comment <- CommentDb.addComment $ Comment
@@ -104,29 +104,25 @@ createComment slug user (BoxedComment newComment) =
                                                 , commentCreatedAt = currentTime
                                                 , commentUpdatedAt = currentTime
                                                 }
-            case comment of
-                Nothing -> throwIO err400
-                Just comment' ->
-                    return $ BoxedComment $ mapEnrichedCommentToCommentData (comment', user, False)
+            flipMaybe comment (throwIO err404) $ \comment' ->
+                return $ BoxedComment $ mapEnrichedCommentToCommentData (comment', user, False)
 
 deleteComment :: Slug
               -> User
               -> UUID
               -> AppM NoContent
 deleteComment slug user uuid =
-    ArticleDb.getArticleBySlug slug >>= \case
-        Nothing -> throwIO err404
-        Just article ->
-            CommentDb.getCommentByUUID uuid >>= \case
-                Nothing -> throwIO err404
-                Just comment ->
-                    if (commentAuthorId comment /= userId user) || (commentArticleId comment /= articleId article) then
-                        throwIO err403
-                    else do
-                        success <- CommentDb.deleteCommentById (commentId comment)
-                        if success
-                        then return NoContent
-                        else throwIO err400
+    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) (\article -> do
+        CommentDb.getCommentByUUID uuid >>= maybe (throwIO err404) (\comment -> do
+            if (commentAuthorId comment /= userId user) || (commentArticleId comment /= articleId article)
+            then
+                throwIO err403
+            else do
+                success <- CommentDb.deleteCommentById (commentId comment)
+                if success
+                then return NoContent
+                else throwIO err400
+            ))
 
 commentServer :: ServerT CommentApi AppM
 commentServer slug = getAllComments slug

@@ -9,12 +9,14 @@ import Hasql.Statement (Statement)
 
 import Conduit.App
 
-withTransaction :: forall a b . ((Transaction a -> AppM a) -> AppM b) -> AppM b
-withTransaction f = do
+runTransaction :: forall a . Transaction a -> AppM a
+runTransaction transaction' = do
     connection <- getConn
-    f $ \m -> do
-        e <- liftIO $ Session.run (Hasql.transaction Hasql.Serializable Hasql.Write m) connection
-        either throwIO pure e
+    e <- liftIO $ Session.run (Hasql.transaction Hasql.Serializable Hasql.Write transaction') connection
+    either throwIO pure e
 
-runStmt :: Statement () b -> Transaction b
+runStmt :: Statement () a -> Transaction a
 runStmt = statement ()
+
+runSimpleStmt :: Statement () a -> AppM a
+runSimpleStmt = runTransaction . runStmt
