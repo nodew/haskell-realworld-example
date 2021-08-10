@@ -2,7 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeFamilies #-}
-module Conduit.Db.Article where
+module Conduit.Repository.Article where
 
 import RIO
 import Rel8
@@ -12,13 +12,7 @@ import Data.List (head, (\\))
 
 import Conduit.Core.User
 import Conduit.Core.Article
-import Conduit.Db.Schema.User
-import Conduit.Db.Schema.Article
-import Conduit.Db.Schema.Tag
-import Conduit.Db.Schema.ArticleTag
-import Conduit.Db.Schema.Favorite
-import Conduit.Db.Schema.UserFollow
-import Conduit.Db.Helper
+import Conduit.Db
 import Conduit.App
 import Conduit.Util
 
@@ -135,7 +129,7 @@ getOrCreateTagId' tag = do
 
 getEnrichedArticleById :: Maybe User -> ArticleId -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleById mbUser id = do
-    records <- runSimpleStmt $ select $ do
+    records <- executeStmt $ select $ do
         article <- getArticleEntityByIdStmt $ litExpr id
         enrichedData <- getArticleEnrichedDataStmt mbUser article
         return (article, enrichedData)
@@ -143,12 +137,12 @@ getEnrichedArticleById mbUser id = do
 
 getArticleById :: ArticleId -> AppM (Maybe Article)
 getArticleById id = do
-    records <- runSimpleStmt $ listToMaybe <$> select (getArticleEntityByIdStmt $ litExpr id)
+    records <- executeStmt $ listToMaybe <$> select (getArticleEntityByIdStmt $ litExpr id)
     return $ mapArticleEntityToArticle <$> records
 
 getEnrichedArticleBySlug :: Maybe User -> Slug -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleBySlug mbUser slug = do
-    records <- runSimpleStmt $ select $ do
+    records <- executeStmt $ select $ do
             article <- getArticleEntityBySlugStmt $ litExpr slug
             enrichedData <- getArticleEnrichedDataStmt mbUser article
             return (article, enrichedData)
@@ -156,7 +150,7 @@ getEnrichedArticleBySlug mbUser slug = do
 
 getArticleBySlug :: Slug -> AppM (Maybe Article)
 getArticleBySlug slug = do
-    records <- runSimpleStmt $ listToMaybe <$> select (getArticleEntityBySlugStmt $ litExpr slug)
+    records <- executeStmt $ listToMaybe <$> select (getArticleEntityBySlugStmt $ litExpr slug)
     return $ mapArticleEntityToArticle <$> records
 
 getPagedArticle :: Maybe User -> Pagination -> ArticleFilters -> AppM ([EnrichedArticle], Int64)
@@ -174,17 +168,17 @@ getPagedArticle mbUser p filters = do
 
 checkFavorite :: User -> ArticleId  -> AppM Bool
 checkFavorite user articleId = do
-    exists <- runSimpleStmt $ select $ checkFavoriteStmt (userId user) (litExpr articleId)
+    exists <- executeStmt $ select $ checkFavoriteStmt (userId user) (litExpr articleId)
     return $ exists == [True]
 
 addFavorite :: User -> ArticleId -> AppM Bool
 addFavorite user articleId = do
-    rowsEffected <- runSimpleStmt $ insert $ addFavoritedArticleStmt (userId user) articleId
+    rowsEffected <- executeStmt $ insert $ addFavoritedArticleStmt (userId user) articleId
     return $ rowsEffected == 1
 
 removeFavorite :: User -> ArticleId -> AppM Bool
 removeFavorite user articleId = do
-    rowsEffected <- runSimpleStmt $ delete $ removeFavoritedArticleStmt (userId user) articleId
+    rowsEffected <- executeStmt $ delete $ removeFavoritedArticleStmt (userId user) articleId
     return $ rowsEffected == 1
 
 deleteArticleById :: ArticleId -> AppM Bool
@@ -210,5 +204,5 @@ updateArticle article = do
 
 getArticleFavoritedCount :: ArticleId -> AppM Int64
 getArticleFavoritedCount articleId = do
-    count <- runSimpleStmt $ select $ getFavoritedCountOfArticleStmt (litExpr articleId)
+    count <- executeStmt $ select $ getFavoritedCountOfArticleStmt (litExpr articleId)
     return $ fromMaybe 0 . listToMaybe $ count

@@ -16,9 +16,9 @@ import Conduit.Core.Comment
 import Conduit.Core.Article
 import Conduit.Core.User
 import Conduit.Api.Common
-import qualified Conduit.Db.Article as ArticleDb
-import qualified Conduit.Db.Comment as CommentDb
-import qualified Conduit.Db.User as UserDb
+import qualified Conduit.Repository.Article as ArticleRepository
+import qualified Conduit.Repository.Comment as CommentRepository
+
 import Conduit.Util
 
 data CommentData = CommentData
@@ -79,10 +79,10 @@ type CommentApi = "articles"
 
 getAllComments :: Slug -> Maybe User -> AppM CommentsResponse
 getAllComments slug mbUser =
-    ArticleDb.getArticleBySlug slug
+    ArticleRepository.getArticleBySlug slug
         >>= maybe (throwIO err404)
                   (\article -> do
-                        comments <- CommentDb.getEnrichedCommentsByArticleId mbUser (articleId article)
+                        comments <- CommentRepository.getEnrichedCommentsByArticleId mbUser (articleId article)
                         return $ CommentsResponse $ map mapEnrichedCommentToCommentData comments)
 
 createComment :: Slug
@@ -90,12 +90,12 @@ createComment :: Slug
               -> BoxedComment NewCommentData
               -> AppM (BoxedComment CommentData)
 createComment slug user (BoxedComment newComment) =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) createComment
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) createComment
     where
         createComment article = do
             currentTime <- liftIO getCurrentTime
             uuid <- liftIO newUUID
-            comment <- CommentDb.addComment $ Comment
+            comment <- CommentRepository.addComment $ Comment
                                                 { commentId        = CommentId 0
                                                 , commentUUID      = uuid
                                                 , commentBody      = newCommentBody newComment
@@ -112,13 +112,13 @@ deleteComment :: Slug
               -> UUID
               -> AppM NoContent
 deleteComment slug user uuid =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) (\article -> do
-        CommentDb.getCommentByUUID uuid >>= maybe (throwIO err404) (\comment -> do
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) (\article -> do
+        CommentRepository.getCommentByUUID uuid >>= maybe (throwIO err404) (\comment -> do
             if (commentAuthorId comment /= userId user) || (commentArticleId comment /= articleId article)
             then
                 throwIO err403
             else do
-                success <- CommentDb.deleteCommentById (commentId comment)
+                success <- CommentRepository.deleteCommentById (commentId comment)
                 if success
                 then return NoContent
                 else throwIO err400

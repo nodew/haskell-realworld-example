@@ -11,7 +11,7 @@ import Conduit.Api.Common
 import Conduit.App
 import Conduit.Core.User
 import Conduit.Core.Password
-import qualified Conduit.Db.User as UserDb
+import qualified Conduit.Repository.User as UserRepository
 import Conduit.Util
 
 data UserResponse = UserResponse
@@ -56,7 +56,7 @@ getUserHandler = return . UserData . mapUserToUserResponse
 
 updateUserHandler :: User -> UserData UpdateUserRequest -> AppM (UserData UserResponse)
 updateUserHandler user (UserData user') = do
-    succeed <- UserDb.updateUser updatedUser newPassword
+    succeed <- UserRepository.updateUser updatedUser newPassword
     if succeed then
         return $ UserData $ mapUserToUserResponse user
     else

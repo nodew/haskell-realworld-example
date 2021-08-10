@@ -45,6 +45,8 @@ dependencies:
 - warp
 - hasql
 - hasql-transaction
+- hasql-migration
+- hasql-pool
 - time
 - extra
 

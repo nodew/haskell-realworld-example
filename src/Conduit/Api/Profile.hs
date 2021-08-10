@@ -11,7 +11,7 @@ import Data.Maybe
 import Conduit.App
 import Conduit.Core.User
 import Conduit.Api.Common
-import qualified Conduit.Db.User as UserDb
+import qualified Conduit.Repository.User as UserRepository
 import Conduit.Util
 
 type ProfileApi = AuthProtect "Optional"
@@ -31,10 +31,10 @@ getProfileHandler mbUser targetUsername
         let user = fromJust mbUser
         return $ Profile $ mapUserToUserProfile user False
     | otherwise =
-        UserDb.getUserByName (Username targetUsername)
+        UserRepository.getUserByName (Username targetUsername)
             >>= maybe (throwIO err404)
                       (\targetUser -> do
-                            following <- flipMaybe mbUser (return False) $ \user -> UserDb.checkFollowship user (userId targetUser)
+                            following <- flipMaybe mbUser (return False) $ \user -> UserRepository.checkFollowship user (userId targetUser)
                             return $ Profile $ mapUserToUserProfile targetUser following)
 
 followUserHandler :: User -> Text -> AppM (Profile UserProfile)
@@ -42,10 +42,10 @@ followUserHandler user targetUsername
     | T.null targetUsername = throwIO err404
     | (getUsername . userName) user == targetUsername = throwIO err403
     | otherwise = do
-        UserDb.getUserByName (Username targetUsername)
+        UserRepository.getUserByName (Username targetUsername)
             >>= maybe (throwIO err404)
                       (\targetUser -> do
-                            _ <- UserDb.followUser user (userId targetUser)
+                            _ <- UserRepository.followUser user (userId targetUser)
                             return $ Profile $ mapUserToUserProfile targetUser True)
 
 unFollowUserHandler :: User -> Text -> AppM (Profile UserProfile)
@@ -53,10 +53,10 @@ unFollowUserHandler user targetUsername
     | T.null targetUsername = throwIO err404
     | (getUsername . userName) user == targetUsername = throwIO err403
     | otherwise =
-        UserDb.getUserByName (Username targetUsername)
+        UserRepository.getUserByName (Username targetUsername)
             >>= maybe (throwIO err404)
                       (\targetUser -> do
-                            _ <- UserDb.unfollowUser user (userId targetUser)
+                            _ <- UserRepository.unfollowUser user (userId targetUser)
                             return $ Profile $ mapUserToUserProfile targetUser False)
 
 profileServer :: ServerT ProfileApi AppM

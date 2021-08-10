@@ -10,20 +10,21 @@ import qualified Data.Text as T
 import Data.Char (toLower)
 
 data Config = Config
-    { cfgPort :: Word16 
+    { cfgPort :: Word16
     , cfgJwtSecret :: Text
+    , cfgPoolSize :: Word16
     , cfgDb :: DbConfig
     } deriving (Generic, Show)
 
 instance FromDhall Config where
     autoWith _ = genericAutoWith $ mkDhallInterpretOptions 3
 
-data DbConfig = DbConfig 
+data DbConfig = DbConfig
     { dbPort     :: Word16
-    , dbHost     :: Text 
+    , dbHost     :: Text
     , dbUser     :: Text
     , dbPasswd   :: Text
-    , dbDatabase :: Text  
+    , dbDatabase :: Text
     } deriving (Generic, Show)
 
 instance FromDhall DbConfig where
@@ -40,6 +41,6 @@ mapDbConfigToSettings cfg =
     where
         host = encodeUtf8 $ dbHost cfg
         port = dbPort cfg
-        user = encodeUtf8 $ dbUser cfg  
+        user = encodeUtf8 $ dbUser cfg
         password = encodeUtf8 $ dbPasswd cfg
         database = encodeUtf8 $ dbDatabase cfg

@@ -14,8 +14,8 @@ import Control.Monad.Trans.Maybe
 import Conduit.App
 import Conduit.Core.User
 import Conduit.Core.Article
-import qualified Conduit.Db.Article as ArticleDb
-import qualified Conduit.Db.User as UserDb
+import qualified Conduit.Repository.Article as ArticleRepository
+import qualified Conduit.Repository.User as UserRepository
 import Conduit.Api.Common
 import Conduit.Util
 
@@ -87,8 +87,8 @@ mapArticleToArticleData article authorProfile favorited favoritedCount =
         , articleDataAuthor         = authorProfile
         }
 
-mapEnrichedArticleToArticleData :: ArticleDb.EnrichedArticle -> ArticleData
-mapEnrichedArticleToArticleData (ArticleDb.EnrichedArticle article author followingAuthor favorited favoritedCount) =
+mapEnrichedArticleToArticleData :: ArticleRepository.EnrichedArticle -> ArticleData
+mapEnrichedArticleToArticleData (ArticleRepository.EnrichedArticle article author followingAuthor favorited favoritedCount) =
     mapArticleToArticleData article (mapUserToUserProfile author followingAuthor) favorited favoritedCount
 
 type ArticleApi = AuthProtect "Optional"
@@ -136,15 +136,15 @@ getArticlesHandler :: Maybe User
                    -> AppM ArticlesResponse
 getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
     (pagedResults, total) <- do
-        tagId <- maybe (return Nothing) ArticleDb.getTagId mbTag
+        tagId <- maybe (return Nothing) ArticleRepository.getTagId mbTag
         withValidFilter mbTag tagId $ do
-            author <- maybe (return Nothing) UserDb.getUserByName (Username <$> mbAuthorName)
+            author <- maybe (return Nothing) UserRepository.getUserByName (Username <$> mbAuthorName)
             withValidFilter mbAuthorName author $ do
-                favoritedBy <- maybe (return Nothing) UserDb.getUserByName (Username <$> mbFavorited)
+                favoritedBy <- maybe (return Nothing) UserRepository.getUserByName (Username <$> mbFavorited)
                 withValidFilter mbFavorited favoritedBy $ do
-                    let filters = ArticleDb.ArticleFilters tagId (userId <$> favoritedBy) (userId <$> author)
-                    let pageParam = ArticleDb.Pagination (fromMaybe 0 mbPage) (fromMaybe 20 mbPageSize)
-                    ArticleDb.getPagedArticle mbUser pageParam filters
+                    let filters = ArticleRepository.ArticleFilters tagId (userId <$> favoritedBy) (userId <$> author)
+                    let pageParam = ArticleRepository.Pagination (fromMaybe 0 mbPage) (fromMaybe 20 mbPageSize)
+                    ArticleRepository.getPagedArticle mbUser pageParam filters
 
     return $ ArticlesResponse total $ map mapEnrichedArticleToArticleData pagedResults
     where
@@ -159,13 +159,13 @@ getArticlesHandler mbUser mbPage mbPageSize mbAuthorName mbFavorited mbTag = do
 
 getArticleBySlugHandler :: Maybe User -> Slug -> AppM (BoxedArticle ArticleData)
 getArticleBySlugHandler mbUser slug = do
-    ArticleDb.getEnrichedArticleBySlug mbUser slug
+    ArticleRepository.getEnrichedArticleBySlug mbUser slug
         >>= maybe (throwIO err404)
                   (return . BoxedArticle . mapEnrichedArticleToArticleData)
 
 getArticleByIdHandler :: Maybe User -> ArticleId -> AppM (BoxedArticle ArticleData)
 getArticleByIdHandler mbUser articleId =
-    ArticleDb.getEnrichedArticleById mbUser articleId
+    ArticleRepository.getEnrichedArticleById mbUser articleId
         >>= maybe (throwIO err404)
                   (return . BoxedArticle . mapEnrichedArticleToArticleData)
 
@@ -173,7 +173,7 @@ createNewArticleHandler :: User -> BoxedArticle NewArticleData -> AppM (BoxedArt
 createNewArticleHandler user (BoxedArticle newArticle) = do
     currentTime <- liftIO getCurrentTime
     slug <- mkSlug title
-    article <- ArticleDb.createArticle $ Article
+    article <- ArticleRepository.createArticle $ Article
                                             { articleAuthorId    = userId user
                                             , articleId          = ArticleId 0
                                             , articleTitle       = title
@@ -194,7 +194,7 @@ createNewArticleHandler user (BoxedArticle newArticle) = do
 
 updateArticleHandler :: User -> Slug -> BoxedArticle UpdateArticleData -> AppM (BoxedArticle ArticleData)
 updateArticleHandler user slug (BoxedArticle updateData) =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) updateArticle
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) updateArticle
     where
         updateArticle article =
             if articleAuthorId article /= userId user
@@ -209,52 +209,52 @@ updateArticleHandler user slug (BoxedArticle updateData) =
                                     , articleTags        = fromMaybe (articleTags article) (updateArticleTagList updateData)
                                     , articleUpdatedAt   = currentTime
                                     }
-                ArticleDb.updateArticle updatedArticle
-                favoritedCount <- ArticleDb.getArticleFavoritedCount (articleId article)
+                ArticleRepository.updateArticle updatedArticle
+                favoritedCount <- ArticleRepository.getArticleFavoritedCount (articleId article)
                 return $ BoxedArticle $ mapArticleToArticleData updatedArticle (mapUserToUserProfile user False) False favoritedCount
 
 deleteArticleHandler :: User -> Slug -> AppM NoContent
 deleteArticleHandler user slug =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) deleteArticle
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) deleteArticle
     where
         deleteArticle article =
             if articleAuthorId article /= userId user
             then
                 throwIO err403
             else do
-                ArticleDb.deleteArticleById (articleId article)
+                ArticleRepository.deleteArticleById (articleId article)
                 return NoContent
 
 favoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
 favoriteArticleHandler user slug =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) favoriteArticle
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) favoriteArticle
     where
         favoriteArticle article =
             if articleAuthorId article == userId user
             then
                 throwIO err403
             else do
-                isFavorited <- ArticleDb.checkFavorite user (articleId article)
+                isFavorited <- ArticleRepository.checkFavorite user (articleId article)
                 if isFavorited
                 then
                     throwIO err400
                 else do
-                    success <- ArticleDb.addFavorite user (articleId article)
+                    success <- ArticleRepository.addFavorite user (articleId article)
                     if success then
                         getArticleByIdHandler (Just user) (articleId article)
                     else throwIO err400
 
 unFavoriteArticleHandler :: User -> Slug -> AppM (BoxedArticle ArticleData)
 unFavoriteArticleHandler user slug =
-    ArticleDb.getArticleBySlug slug >>= maybe (throwIO err404) unFavoriteArticle
+    ArticleRepository.getArticleBySlug slug >>= maybe (throwIO err404) unFavoriteArticle
     where
         unFavoriteArticle article = do
-            isFavorited <- ArticleDb.checkFavorite user (articleId article)
+            isFavorited <- ArticleRepository.checkFavorite user (articleId article)
             if not isFavorited
             then
                 throwIO err400
             else do
-                success <- ArticleDb.removeFavorite user (articleId article)
+                success <- ArticleRepository.removeFavorite user (articleId article)
                 if success then
                     getArticleByIdHandler (Just user) (articleId article)
                 else throwIO err400

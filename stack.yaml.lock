@@ -19,6 +19,13 @@ packages:
   original:
     hackage: hasql-1.4.5.1
 - completed:
+    hackage: hasql-migration-0.3.0@sha256:6ca4cc6c89834bb79eb9f15b504774043b5b3994336bd86a9d79e59da6d54963,2799
+    pantry-tree:
+      size: 589
+      sha256: 55e3dfca36ffe0d11e1c42bce446e3cc1d5b9a4983e196ec99c650c8b4268845
+  original:
+    hackage: hasql-migration-0.3.0
+- completed:
     hackage: servant-auth-0.4.0.0@sha256:f913100ce607365e37570d08e8c72e48dce8789950f92f4fd9c689eac8af00c3,2185
     pantry-tree:
       size: 332

@@ -11,8 +11,7 @@ import Hasql.Transaction (statement)
 import Servant
 
 
-import Conduit.Db.Schema.Tag
-import Conduit.Db.Helper
+import Conduit.Db
 
 import Conduit.App
 
@@ -23,7 +22,7 @@ type TagApi = "tags" :> Get '[JSON] TagsResponse
 
 getAllTagsHandler :: AppM TagsResponse
 getAllTagsHandler = do
-    tags <- runSimpleStmt $ select $ each tagSchema
+    tags <- executeStmt $ select $ each tagSchema
     return $ TagsResponse $ map entityTagText tags
 
 tagServer :: ServerT TagApi AppM

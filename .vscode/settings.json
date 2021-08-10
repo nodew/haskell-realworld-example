@@ -12,9 +12,12 @@
         "dhall",
         "fmap",
         "hasql",
+        "hspec",
+        "mconcat",
         "nodew",
         "realworld",
         "rtsopts",
-        "unfollow"
+        "unfollow",
+        "varchar"
     ]
 }

@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-module Conduit.Db.Comment where
+module Conduit.Repository.Comment where
 
 import RIO
 import Rel8
@@ -9,16 +9,13 @@ import Conduit.App
 import Conduit.Core.User
 import Conduit.Core.Article
 import Conduit.Core.Comment
-import Conduit.Db.Schema.Comment
-import Conduit.Db.Schema.User
-import Conduit.Db.Schema.UserFollow
-import Conduit.Db.Helper
+import Conduit.Db
 
 type EnrichedComment = (Comment, User, Bool )
 
 getEnrichedCommentsByArticleId :: Maybe User -> ArticleId -> AppM [EnrichedComment]
 getEnrichedCommentsByArticleId mbUser articleId = do
-    results <- runSimpleStmt $ select $ do
+    results <- executeStmt $ select $ do
         comment <- getCommentsByArticleIdStmt (litExpr articleId)
         author <- getUserByIdStmt (entityCommentAuthorId comment)
         followingAuthor <- maybe (return $ litExpr False) (\user -> checkFollowshipStmt user (entityCommentAuthorId comment)) mbUser
@@ -27,22 +24,22 @@ getEnrichedCommentsByArticleId mbUser articleId = do
 
 getCommentById :: CommentId -> AppM (Maybe Comment)
 getCommentById commentId = do
-    comments <- runSimpleStmt $ select $ getCommentByIdStmt (litExpr commentId)
+    comments <- executeStmt $ select $ getCommentByIdStmt (litExpr commentId)
     return $ listToMaybe $ map mapCommentEntityToComment comments
 
 getCommentByUUID :: UUID -> AppM (Maybe Comment)
 getCommentByUUID  uuid = do
-    comments <- runSimpleStmt $ select $ getCommentByUUIDStmt (litExpr uuid)
+    comments <- executeStmt $ select $ getCommentByUUIDStmt (litExpr uuid)
     return $ listToMaybe $ map mapCommentEntityToComment comments
 
 addComment :: Comment -> AppM (Maybe Comment)
 addComment comment = do
-    commentId <- runSimpleStmt $ insert (insertCommentStmt comment)
+    commentId <- executeStmt $ insert (insertCommentStmt comment)
     return $ updateCommentId =<< listToMaybe commentId
     where
         updateCommentId commentId' = Just $ comment {commentId = commentId' }
 
 deleteCommentById :: CommentId -> AppM Bool
 deleteCommentById commentId = do
-    changedRows <- runSimpleStmt $ delete $ deleteCommentStmt commentId
+    changedRows <- executeStmt $ delete $ deleteCommentStmt commentId
     return $ changedRows == 1

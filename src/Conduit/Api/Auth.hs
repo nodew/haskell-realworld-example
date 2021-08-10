@@ -10,7 +10,7 @@ import Servant
 
 import Conduit.App
 import Conduit.Api.Common
-import qualified Conduit.Db.User as UserDb
+import qualified Conduit.Repository.User as UserRepository
 import Conduit.Core.Password
 import Conduit.Core.User
 import Conduit.JWT
@@ -74,12 +74,12 @@ type AuthApi = "users"
 
 loginHandler :: UserData LoginUser -> AppM (UserData LoginResponse)
 loginHandler (UserData u) =
-    UserDb.getUserByEmailAndPassword (EmailAddress $ loginEmail u) (Password $ loginPassword u)
+    UserRepository.getUserByEmailAndPassword (EmailAddress $ loginEmail u) (Password $ loginPassword u)
         >>= maybe (throwIO err401) (fmap UserData . genUserResponse)
 
 registerHandler :: UserData NewUser -> AppM (UserData LoginResponse)
 registerHandler (UserData u) =
-    UserDb.saveNewUser newUser password
+    UserRepository.saveNewUser newUser password
         >>= maybe (throwIO err400) (fmap UserData . genUserResponse)
     where
         username = Username $ newUserUsername u

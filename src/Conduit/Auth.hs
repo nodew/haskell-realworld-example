@@ -19,9 +19,9 @@ import Servant.Server.Experimental.Auth
     mkAuthHandler,
   )
 
-import Conduit.App (AppEnv (envConn, envJwtKey))
+import Conduit.App (AppEnv (envJwtKey))
 import Conduit.Core.User (User (..), Username (..))
-import Conduit.Db.User (getUserByName)
+import Conduit.Repository.User (getUserByName)
 import Conduit.JWT (getSubject, verifyJwt)
 import Conduit.Util ( hoistMaybe )
 
@@ -36,7 +36,7 @@ handleAuthentication env =
         user <- liftIO $ getUserFromJwtToken env req
         case user of
           Just user' -> return user'
-          _ -> liftIO $ throwIO err401 
+          _ -> liftIO $ throwIO err401
    in mkAuthHandler handler
 
 getUserFromJwtToken :: AppEnv -> Request -> IO (Maybe User)

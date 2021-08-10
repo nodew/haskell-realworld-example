@@ -8,5 +8,6 @@ allow-newer: true
 extra-deps:
 - rel8-1.1.0.0
 - hasql-1.4.5.1
+- hasql-migration-0.3.0
 - servant-auth-0.4.0.0
 - servant-auth-server-0.4.6.0
