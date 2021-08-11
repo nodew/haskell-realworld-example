@@ -12,7 +12,6 @@ import Data.Char (toLower)
 data Config = Config
     { cfgPort :: Word16
     , cfgJwtSecret :: Text
-    , cfgPoolSize :: Word16
     , cfgDb :: DbConfig
     } deriving (Generic, Show)
 
@@ -25,6 +24,7 @@ data DbConfig = DbConfig
     , dbUser     :: Text
     , dbPasswd   :: Text
     , dbDatabase :: Text
+    , dbPoolSize :: Word16
     } deriving (Generic, Show)
 
 instance FromDhall DbConfig where

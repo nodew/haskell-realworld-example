@@ -109,10 +109,12 @@ getArticleEnrichedDataStmt mbUser article = do
 createArticle :: Article -> AppM (Maybe Article)
 createArticle article = runTransaction $ do
     mbArticleId <- runStmt $ listToMaybe <$> insert (insertArticleStmt article)
-    whenJust mbArticleId $ \articleId' -> do
-        tagIds <- mapM getOrCreateTagId' (articleTags article)
-        _ <- runStmt $ insert $ insertArticleTagsStmt articleId' tagIds
-        return $ Just article { articleId = articleId' }
+    case mbArticleId of
+        Just articleId' -> do
+            tagIds <- mapM getOrCreateTagId' (articleTags article)
+            _ <- runStmt $ insert $ insertArticleTagsStmt articleId' tagIds
+            return $ Just article { articleId = articleId' }
+        Nothing -> return Nothing
 
 getTagId' :: Text -> Transaction (Maybe TagId)
 getTagId' tag = runStmt $ listToMaybe <$> select (getTagIdStmt tag)

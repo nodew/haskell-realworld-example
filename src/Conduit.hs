@@ -47,10 +47,9 @@ mkApp env =
 
 runConduit :: Config -> IO ()
 runConduit cfg = do
-    let postgresSettings = mapDbConfigToSettings $ cfgDb cfg
     let jwtKey = fromOctets . encodeUtf8 . cfgJwtSecret $ cfg
-    pool <- acquire (fromIntegral $ cfgPoolSize cfg, 1, postgresSettings)
-    result <- migrate pool "sql"
+    pool <- loadPool $ cfgDb cfg
+    result <- autoMigrate pool
     whenJust result $ \e -> do
         error $ show e
     let env = AppEnv

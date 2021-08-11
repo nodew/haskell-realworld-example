@@ -1,4 +1,5 @@
 .stack-work/
 *~
 conduit.dhall
+conduit-test.dhall
 conduit-server.cabal

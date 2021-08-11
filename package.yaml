@@ -49,6 +49,7 @@ dependencies:
 - hasql-pool
 - time
 - extra
+- file-embed
 
 default-extensions:
 - NoImplicitPrelude

@@ -22,8 +22,8 @@ hoistMaybe = MaybeT . return
 newUUID :: IO UUID
 newUUID = randomIO
 
-whenJust :: Monad m => Maybe t -> (t -> m (Maybe a)) -> m (Maybe a)
-whenJust mb f = maybe (return Nothing) f mb
+-- whenJust :: Monad m => Maybe t -> (t -> m (Maybe a)) -> m (Maybe a)
+-- whenJust mb f = maybe (return Nothing) f mb
 
 flipMaybe :: Maybe a -> b -> (a -> b) -> b
 flipMaybe mb error f = maybe error f mb

@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-module Conduit.Api.AuthApiSpec where
+module Test.Conduit.Api.AuthApiSpec where
 
 import RIO
 import Data.Aeson
@@ -15,9 +15,9 @@ import qualified Data.Text as T
 import Conduit
 import Conduit.App
 import Conduit.Config
-import Conduit.TestHelper
 import Conduit.Api.Common
 import Conduit.Api.Auth
+import Test.Conduit.TestHelper
 
 registerNewUser :: forall st . Text -> THW.WaiSession st SResponse
 registerNewUser username =
@@ -43,7 +43,7 @@ loginWith username =
 
 spec :: Spec
 spec =
-     context "Login/Register user" $ do
+     context "Login/Register user" $ afterAll_ cleanUpDb $ do
         withApplication $ do
             it "should register a new user" $ do
                 response <- registerNewUser "test001"
@@ -61,4 +61,3 @@ spec =
                 liftIO $ mbBody `shouldNotBe` Nothing
                 let (UserData loginResponse) = fromJust mbBody
                 liftIO $ loginRespToken loginResponse `shouldNotBe` ""
-
