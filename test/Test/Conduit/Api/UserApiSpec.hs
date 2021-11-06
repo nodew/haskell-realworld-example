@@ -19,7 +19,7 @@ spec = do
     let username = "test"
     context "User APIs"
         $ beforeAll_ (setupTestUser username)
-        -- $ afterAll_ cleanUpDb
+        $ afterAll_ cleanUpDb
         $ withApplication
         $ do
             it "Get user detail with token" $ do
