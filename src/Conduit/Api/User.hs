@@ -19,10 +19,13 @@ data UserResponse = UserResponse
     , urEmail    :: Text
     , urBio      :: Text
     , urImage    :: Text
-    } deriving (Show, Generic)
+    } deriving (Show, Eq, Generic)
 
 instance ToJSON UserResponse where
     toJSON = genericToJSON $ toJsonOptions 2
+
+instance FromJSON UserResponse where
+    parseJSON = genericParseJSON $ toJsonOptions 2
 
 data UpdateUserRequest = UpdateUserRequest
     { uurUsername :: Maybe Text
@@ -58,7 +61,7 @@ updateUserHandler :: User -> UserData UpdateUserRequest -> AppM (UserData UserRe
 updateUserHandler user (UserData user') = do
     succeed <- UserRepository.updateUser updatedUser newPassword
     if succeed then
-        return $ UserData $ mapUserToUserResponse user
+        return $ UserData $ mapUserToUserResponse updatedUser
     else
         throwIO err400
     where
