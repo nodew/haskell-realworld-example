@@ -3,3 +3,4 @@
 conduit.dhall
 conduit-test.dhall
 conduit-server.cabal
+stack*.lock
