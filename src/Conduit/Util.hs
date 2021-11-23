@@ -8,6 +8,8 @@ import Data.List ( head, tail )
 import Data.Char ( toLower )
 import Data.UUID
 import System.Random
+import Data.ByteArray (Bytes, convert)
+import Data.Text.Encoding (decodeUtf8)
 
 toJsonOptions :: Int -> Options
 toJsonOptions prefixLength =
@@ -22,8 +24,11 @@ hoistMaybe = MaybeT . return
 newUUID :: IO UUID
 newUUID = randomIO
 
--- whenJust :: Monad m => Maybe t -> (t -> m (Maybe a)) -> m (Maybe a)
--- whenJust mb f = maybe (return Nothing) f mb
-
 flipMaybe :: Maybe a -> b -> (a -> b) -> b
 flipMaybe mb error f = maybe error f mb
+
+fromTextToBytes :: Text -> Bytes
+fromTextToBytes = convert . encodeUtf8
+
+fromBytesToText :: Bytes -> Text
+fromBytesToText = decodeUtf8 . convert

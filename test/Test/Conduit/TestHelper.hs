@@ -71,18 +71,16 @@ setupTestUser :: Text -> IO ()
 setupTestUser username = do
     let email = T.append username "@test.com"
     let password = Password $ T.append username "password"
-    (hash, salt) <- hashPassword password
+    hash <- hashPassword password
     setupSeedData $
         sql $ mconcat
-            [ "INSERT INTO users (user_email, user_username, user_password, user_salt, user_bio, user_image)"
+            [ "INSERT INTO users (user_email, user_username, user_password, user_bio, user_image)"
             , "VALUES ('"
             , T.encodeUtf8 email
             , "', '"
             , T.encodeUtf8 username
             , "', '"
             , T.encodeUtf8 . getHashedPasswd $ hash
-            , "', '"
-            , T.encodeUtf8 . getSalt $ salt
             , "', ''"
             , ", '');"
             ]

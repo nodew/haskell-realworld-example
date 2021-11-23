@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY
   , user_email VARCHAR(64) UNIQUE NOT NULL
   , user_username VARCHAR(64) UNIQUE NOT NULL
-  , user_password VARCHAR(64) NOT NULL
-  , user_salt VARCHAR(64) NOT NULL
+  , user_password VARCHAR(60) NOT NULL
   , user_bio TEXT
   , user_image TEXT
   , user_createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP

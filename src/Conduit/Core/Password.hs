@@ -7,10 +7,12 @@ import Rel8 ( DBEq, DBType )
 import Data.Aeson ( FromJSON, ToJSON )
 import Crypto.Random ( MonadRandom(getRandomBytes) )
 import Crypto.Hash ( hashWith, SHA256(SHA256) )
+import Crypto.KDF.BCrypt as Bcrypt (bcrypt, validatePassword)
 import qualified Data.Text as T
+import Data.ByteArray (Bytes, convert)
+import Conduit.Util (fromTextToBytes, fromBytesToText)
 
-newtype Salt = Salt { getSalt :: Text }
-    deriving newtype (Eq, Show, Read, DBEq, DBType)
+newtype Salt = Salt Bytes
 
 newtype HashedPassword = HashedPassword { getHashedPasswd :: Text }
     deriving newtype (Eq, Show, Read, DBEq, DBType)
@@ -18,24 +20,24 @@ newtype HashedPassword = HashedPassword { getHashedPasswd :: Text }
 newtype Password = Password { getPassword :: Text }
     deriving newtype (Eq, Show, Read, FromJSON, ToJSON, DBEq, DBType)
 
+unsafePassword :: Text -> Password
+unsafePassword = Password
+
+mkPassword :: Text -> Maybe Password
+mkPassword rawText =
+    if T.length rawText <= 6 then Nothing
+    else Just $ Password rawText
+
 newSalt :: MonadIO m => m Salt
-newSalt = do
-    rnd <- liftIO $ getRandomBytes 32
-    return $ Salt $ T.pack $ show $ hashWith SHA256 (rnd :: ByteString)
+newSalt = liftIO $ Salt <$> getRandomBytes 16
 
 hashPasswordWithSalt :: Password -> Salt -> HashedPassword
 hashPasswordWithSalt (Password password) (Salt salt) =
-    let _salt = hashWith SHA256 (encodeUtf8 salt)
-        _password = hashWith SHA256 _salt
-    in HashedPassword $ T.pack $ show _password
+    let hash = Bcrypt.bcrypt 10 salt (fromTextToBytes password)
+    in HashedPassword $ fromBytesToText hash
 
-hashPassword :: MonadIO m => Password -> m (HashedPassword, Salt)
-hashPassword password = do
-    salt <- newSalt
-    let hash = hashPasswordWithSalt password salt
-    return (hash, salt)
+hashPassword :: MonadIO m => Password -> m HashedPassword
+hashPassword password = hashPasswordWithSalt password <$> newSalt
 
-verifyPassword :: Password -> Salt -> HashedPassword -> Bool
-verifyPassword password salt hash =
-    let _hash = hashPasswordWithSalt password salt
-    in hash == _hash
+verifyPassword :: Password -> HashedPassword -> Bool
+verifyPassword (Password password) (HashedPassword hash) = Bcrypt.validatePassword (fromTextToBytes password) (fromTextToBytes hash)

@@ -33,6 +33,7 @@ dependencies:
 - lens
 - jose
 - cryptonite
+- memory
 - mtl
 - transformers
 - dhall

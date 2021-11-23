@@ -32,7 +32,7 @@ getUserByEmailAndPassword email password = do
     return $ verifyPassword' =<< listToMaybe users
     where
         verifyPassword' user =
-            if verifyPassword password (entityUserSalt user) (entityUserPassword user)
+            if verifyPassword password (entityUserPassword user)
             then
                 Just $ mapUserEntityToUser user
             else

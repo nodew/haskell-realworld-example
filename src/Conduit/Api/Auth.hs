@@ -15,6 +15,7 @@ import Conduit.Core.Password
 import Conduit.Core.User
 import Conduit.JWT
 import Conduit.Util
+import Conduit.Environment
 
 data LoginUser = LoginUser
     { loginEmail :: Text
@@ -90,7 +91,7 @@ registerHandler (UserData u) =
 genUserResponse :: User -> AppM LoginResponse
 genUserResponse user = do
     let username = userName user
-    jwtKey <- getJwtKey
+    jwtKey <- getJwtKey'
     claims <- liftIO $ mkClaims username
     liftIO $ signJwt jwtKey claims
         >>= either (\_ -> throwIO err422) (return . mapUserToLoginResponse user)

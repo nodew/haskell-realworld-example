@@ -13,6 +13,7 @@ import Hasql.Statement (Statement)
 
 import Conduit.Config
 import Conduit.App
+import Conduit.Environment
 
 loadPool :: DbConfig -> IO Pool
 loadPool cfg = acquire (poolSize, 1, postgresSettings)
@@ -36,9 +37,9 @@ runTransactionWithPool pool transaction = do
 runStmt :: Statement () a -> Transaction a
 runStmt = statement ()
 
-runTransaction :: forall a . Transaction a -> AppM a
+runTransaction :: forall a m env . (HasDbPool env, MonadReader env m, MonadIO m) => Transaction a -> m a
 runTransaction transaction = do
-    pool <- getDbPool
+    pool <- getDbPool'
     runTransactionWithPool pool transaction
 
 executeStmt :: Statement () a -> AppM a
