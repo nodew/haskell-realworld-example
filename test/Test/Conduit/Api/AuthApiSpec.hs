@@ -23,10 +23,17 @@ spec =
                 let (UserData loginResponse) = fromJust mbBody
                 liftIO $ loginRespToken loginResponse `shouldNotBe` ""
 
-            before_ (setupTestUser "test002") $ it "should login and response token" $ do
+            before_ (setupTestUser "test002") $ after_ (removeTestUser "test002") $ do
+                it "should get a list of articles" $ do
+                    response <- loginWith "test002"
+                    liftIO $ statusCode (simpleStatus response) `shouldBe` 200
+                    let mbBody = decode (simpleBody response) :: Maybe (UserData LoginResponse)
+                    liftIO $ mbBody `shouldNotBe` Nothing
+                    let (UserData loginResponse) = fromJust mbBody
+                    liftIO $ loginRespToken loginResponse `shouldNotBe` ""
+
+            it "should not login and throw error" $ do
                 response <- loginWith "test002"
-                liftIO $ statusCode (simpleStatus response) `shouldBe` 200
+                liftIO $ statusCode (simpleStatus response) `shouldBe` 401
                 let mbBody = decode (simpleBody response) :: Maybe (UserData LoginResponse)
-                liftIO $ mbBody `shouldNotBe` Nothing
-                let (UserData loginResponse) = fromJust mbBody
-                liftIO $ loginRespToken loginResponse `shouldNotBe` ""
+                liftIO $ mbBody `shouldBe` Nothing

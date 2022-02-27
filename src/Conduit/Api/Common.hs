@@ -34,10 +34,13 @@ data UserProfile = UserProfile
     , profileBio       :: Text
     , profileImage     :: Text
     , profileFollowing :: Bool
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance ToJSON UserProfile where
     toJSON = genericToJSON $ toJsonOptions 7
+
+instance FromJSON UserProfile where
+    parseJSON = genericParseJSON $ toJsonOptions 7
 
 mapUserToUserProfile :: User -> Bool -> UserProfile
 mapUserToUserProfile user following = UserProfile

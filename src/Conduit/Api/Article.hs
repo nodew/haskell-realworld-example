@@ -24,10 +24,13 @@ data NewArticleData = NewArticleData
     , newArticleDescription :: Text
     , newArticleBody        :: Text
     , newArticleTagList     :: [Text]
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance FromJSON NewArticleData where
     parseJSON = genericParseJSON $ toJsonOptions 10
+
+instance ToJSON NewArticleData where
+    toJSON = genericToJSON $ toJsonOptions 10
 
 data UpdateArticleData = UpdateArticleData
     { updateArticleTitle       :: Maybe Text
@@ -50,13 +53,16 @@ data ArticleData = ArticleData
     , articleDataFavorited      :: Bool
     , articleDataFavoritesCount :: Int64
     , articleDataAuthor         :: UserProfile
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance ToJSON ArticleData where
     toJSON = genericToJSON $ toJsonOptions 11
 
+instance FromJSON ArticleData where
+    parseJSON = genericParseJSON $ toJsonOptions 11
+
 newtype BoxedArticle a = BoxedArticle
-    { boxedArticle :: a } deriving (Show, Generic)
+    { boxedArticle :: a } deriving (Eq, Show, Generic)
 
 instance ToJSON a => ToJSON (BoxedArticle a) where
     toJSON = genericToJSON $ toJsonOptions 5
@@ -67,10 +73,13 @@ instance FromJSON a => FromJSON (BoxedArticle a) where
 data ArticlesResponse = ArticlesResponse
     { articlesRespArticlesCount :: Int64
     , articlesRespArticles      :: [ArticleData]
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance ToJSON ArticlesResponse where
     toJSON = genericToJSON $ toJsonOptions 12
+
+instance FromJSON ArticlesResponse where
+    parseJSON = genericParseJSON $ toJsonOptions 12
 
 mapArticleToArticleData :: Article -> UserProfile -> Bool -> Int64 -> ArticleData
 mapArticleToArticleData article authorProfile favorited favoritedCount =
