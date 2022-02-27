@@ -62,8 +62,7 @@ spec = do
                 liftIO $ count `shouldBe` 1
                 liftIO $ articleDataTitle article `shouldBe` "test article title"
 
-            {- TODO: Response should be 401 instead of 500
-            it "User tries to comment on an article without authentication" $ do
+            it "should fail to comment without authentication" $ do
                 let comment = BoxedComment (NewCommentData "a good test article")
                 response <- THW.request
                                 methodPost
@@ -72,7 +71,7 @@ spec = do
                                 $ encode comment
                 liftIO $ statusCode (simpleStatus response) `shouldBe` 401
                 let mbBody = decode (simpleBody response) :: Maybe (BoxedComment CommentData)
-                liftIO $ mbBody `shouldNotBe` Nothing-}
+                liftIO $ mbBody `shouldBe` Nothing
 
             it "should add a comment to an article" $ do
                 let body = "a good test article"
@@ -92,7 +91,7 @@ spec = do
                 liftIO $ commentDataBody commentData `shouldBe` body
                 liftIO $ (profileUsername $ commentDataAuthor commentData) `shouldBe` username
 
-            it "should add a comment to an article" $ do
+            it "should create an article" $ do
                 let title = "test article title"
                 let description = "test article description"
                 let body = "test article body"
