@@ -1,0 +1,5 @@
+.vscode
+.stack-work
+test
+Dockerfile
+docker-compose*.yaml

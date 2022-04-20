@@ -16,7 +16,6 @@ import qualified Data.ByteString as B
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import Dhall
 import Hasql.Transaction
 import Network.HTTP.Types
 import Network.Wai
@@ -27,12 +26,13 @@ import Test.Hspec
 import Test.Hspec.Wai
 import qualified Test.Hspec.Wai as THW
 import System.IO (putStrLn)
+import Conduit.Config
 
 loadTestEnv :: IO AppEnv
 loadTestEnv = do
-    cfg <- input auto "./conduit-test.dhall"
-    let jwtKey = fromOctets . encodeUtf8 . cfgJwtSecret $ cfg
-    pool <- loadPool $ cfgDb cfg
+    cfg <- loadConfigFromEnv
+    let jwtKey = fromOctets . encodeUtf8 . cfgJwk $ cfg
+    pool <- loadPool (cfgConnectString cfg) (cfgPoolSize cfg)
     result <- autoMigrate pool
     whenJust result $ \e -> do
         error $ show e

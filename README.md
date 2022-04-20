@@ -25,7 +25,7 @@ stack exec conduit-server-exe
 
 ## TODO
 
-- [ ] Add integration tests
-- [ ] Add DB migrator
-- [ ] Build full static Haskell binaries with docker
-- [ ] Support docker compose
+- [x] Add integration tests
+- [x] Add DB migrator
+- [ ] Build full static Haskell binaries with docker or nix
+- [x] Support docker compose
