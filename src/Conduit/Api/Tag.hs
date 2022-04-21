@@ -16,7 +16,10 @@ import Conduit.Db
 import Conduit.App
 
 newtype TagsResponse = TagsResponse
-    { tags :: [Text] } deriving (Generic, ToJSON)
+    { tags :: [Text] } deriving (Generic)
+
+instance ToJSON TagsResponse where
+    toJSON (TagsResponse a) = object ["tags" .= a]
 
 type TagApi = "tags" :> Get '[JSON] TagsResponse
 

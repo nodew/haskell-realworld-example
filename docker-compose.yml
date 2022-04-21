@@ -1,6 +1,19 @@
 version: '3.7'
 
 services:
+  conduit-www:
+    build:
+      context: ./nginx
+      args:
+        - UPSTREAM=http://conduit-server:8080/api
+    depends_on:
+      - conduit-server
+    ports:
+      - "8000:80"
+    restart: on-failure
+    networks:
+      - intranet
+
   conduit-server:
     build: .
     depends_on:
