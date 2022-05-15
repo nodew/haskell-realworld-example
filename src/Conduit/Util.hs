@@ -10,6 +10,7 @@ import Data.UUID
 import System.Random
 import Data.ByteArray (Bytes, convert)
 import Data.Text.Encoding (decodeUtf8)
+import System.IO ( hPutStrLn )
 
 toJsonOptions :: Int -> Options
 toJsonOptions prefixLength =
@@ -32,3 +33,9 @@ fromTextToBytes = convert . encodeUtf8
 
 fromBytesToText :: Bytes -> Text
 fromBytesToText = decodeUtf8 . convert
+
+exitWithErrorMessageAndCode :: String -> ExitCode -> IO a
+exitWithErrorMessageAndCode str e = hPutStrLn stderr str >> exitWith e
+
+exitWithErrorMessage :: String -> IO a
+exitWithErrorMessage msg = exitWithErrorMessageAndCode msg (ExitFailure 2)

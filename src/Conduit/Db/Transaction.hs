@@ -15,11 +15,8 @@ import Conduit.Config
 import Conduit.App
 import Conduit.Environment
 
-loadPool :: DbConfig -> IO Pool
-loadPool cfg = acquire (poolSize, 1, postgresSettings)
-    where
-        postgresSettings = mapDbConfigToSettings cfg
-        poolSize = fromIntegral $ dbPoolSize cfg
+loadPool :: ByteString -> Int -> IO Pool
+loadPool connectString poolSize = acquire (poolSize, 1, connectString)
 
 runTransactionWithConnection :: MonadIO m => Connection -> Transaction b -> m b
 runTransactionWithConnection conn transaction = do

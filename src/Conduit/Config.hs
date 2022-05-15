@@ -1,46 +1,40 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module Conduit.Config where
 
 import RIO
-import Dhall
-import Hasql.Connection
-import qualified Data.Text as T
 import Data.Char (toLower)
+import System.Environment ( getEnv )
+import Conduit.Util (exitWithErrorMessage)
 
 data Config = Config
-    { cfgPort :: Word16
-    , cfgJwtSecret :: Text
-    , cfgDb :: DbConfig
+    { cfgPort :: Int
+    , cfgJwk :: Text
+    , cfgConnectString :: ByteString
+    , cfgPoolSize :: Int
     } deriving (Generic, Show)
 
-instance FromDhall Config where
-    autoWith _ = genericAutoWith $ mkDhallInterpretOptions 3
+loadConfigFromEnv :: IO Config
+loadConfigFromEnv = do
+    port <- getEnv' "8080" "APP_PORT"
+    jwk <- getEnv' "" "JWK_STRING"
+    connectString <- getEnv' "" "POSTGRES_CONNECT_STRING"
+    poolSize <- getEnv' "1" "POSTGRES_POOL_SIZE"
 
-data DbConfig = DbConfig
-    { dbPort     :: Word16
-    , dbHost     :: Text
-    , dbUser     :: Text
-    , dbPasswd   :: Text
-    , dbDatabase :: Text
-    , dbPoolSize :: Word16
-    } deriving (Generic, Show)
+    if null jwk then
+        exitWithErrorMessage "Environment variable JWK_STRING is missing"
+    else if null connectString then
+        exitWithErrorMessage "Environment variable POSTGRES_CONNECT_STRING is missing"
+    else
+        return $ Config
+            (readInt 8080 port)
+            (fromString jwk)
+            (fromString connectString)
+            (readInt 1 poolSize)
 
-instance FromDhall DbConfig where
-    autoWith _ = genericAutoWith $ mkDhallInterpretOptions 2
+readInt :: Int -> String -> Int
+readInt optional value = fromMaybe optional $ readMaybe value
 
-mkDhallInterpretOptions :: Int -> InterpretOptions
-mkDhallInterpretOptions prefixLength = defaultInterpretOptions { fieldModifier = headToLower . T.drop prefixLength }
-    where
-        headToLower x = T.pack [toLower $ T.head x] `T.append` T.tail x
-
-mapDbConfigToSettings :: DbConfig -> Settings
-mapDbConfigToSettings cfg =
-    settings host port user password database
-    where
-        host = encodeUtf8 $ dbHost cfg
-        port = dbPort cfg
-        user = encodeUtf8 $ dbUser cfg
-        password = encodeUtf8 $ dbPasswd cfg
-        database = encodeUtf8 $ dbDatabase cfg
+getEnv' :: String -> String -> IO String
+getEnv' optional key =
+    catch (getEnv key) (const $ pure optional :: IOException -> IO String)

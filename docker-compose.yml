@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  conduit-www:
+    build:
+      context: ./nginx
+      args:
+        - UPSTREAM=http://conduit-server:8080/api
+    depends_on:
+      - conduit-server
+    ports:
+      - "8000:80"
+    restart: on-failure
+    networks:
+      - intranet
+
+  conduit-server:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      - POSTGRES_CONNECT_STRING=host=db port=5432 user=postgres password=postgres dbname=conduit connect_timeout=10
+      - POSTGRES_POOL_SIZE=4
+      - JWK_STRING=b3d3038c4f8c44589de316439d3d227c
+    restart: on-failure
+    networks:
+      - intranet
+
+  db:
+    image: postgres:14.1
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=conduit
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - type: volume
+        source: pgdata
+        target: /var/lib/postgresql/data/pgdata
+        read_only: false
+    networks:
+      - intranet
+
+volumes:
+  pgdata:
+
+networks:
+  intranet:
+
