@@ -27,19 +27,25 @@ data CommentData = CommentData
     , commentDataCreatedAt   :: UTCTime
     , commentDataUpdatedAt   :: UTCTime
     , commentDataAuthor      :: UserProfile
-    } deriving (Show, Generic)
+    } deriving (Eq, Show, Generic)
 
 instance ToJSON CommentData where
     toJSON = genericToJSON $ toJsonOptions 11
 
+instance FromJSON CommentData where
+    parseJSON = genericParseJSON $ toJsonOptions 11
+
 newtype NewCommentData = NewCommentData
     { newCommentBody :: Text } deriving (Generic)
+
+instance ToJSON NewCommentData where
+    toJSON = genericToJSON $ toJsonOptions 10
 
 instance FromJSON NewCommentData where
     parseJSON = genericParseJSON $ toJsonOptions 10
 
 newtype BoxedComment a = BoxedComment
-    { unBoxedComment :: a } deriving (Generic)
+    { unBoxedComment :: a } deriving (Eq, Show, Generic)
 
 instance FromJSON a => FromJSON (BoxedComment a) where
     parseJSON = genericParseJSON $ toJsonOptions 7

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Conduit.Auth where
 
@@ -9,13 +10,10 @@ import Control.Monad.Trans.Maybe (MaybeT (..))
 import Crypto.JOSE.JWK (JWK)
 import Data.Either.Extra (eitherToMaybe)
 import qualified Data.Text as T
-import Hasql.Connection (Connection)
 import Network.Wai (Request, requestHeaders)
-import qualified RIO.Text as T
-import Servant (AuthProtect, err401)
+import Servant (AuthProtect, err401, errBody, throwError)
 import Servant.Server.Experimental.Auth
   ( AuthHandler,
-    AuthServerData,
     mkAuthHandler,
   )
 
@@ -36,7 +34,7 @@ handleAuthentication env =
         user <- liftIO $ getUserFromJwtToken env req
         case user of
           Just user' -> return user'
-          _ -> liftIO $ throwIO err401
+          _ -> throwError $ err401 { errBody = "Invalid JWT Token" }
    in mkAuthHandler handler
 
 getUserFromJwtToken :: AppEnv -> Request -> IO (Maybe User)

@@ -62,17 +62,40 @@ cleanUpDb = do
             , "users"
             ]
 
-setupSeedData :: Transaction () -> IO ()
-setupSeedData transaction = do
+runSql :: Transaction () -> IO ()
+runSql transaction = do
     env <- loadTestEnv
     runTransactionWithPool (envDbPool env) transaction
+
+setupTestArticle :: Text -> IO ()
+setupTestArticle userId = do
+    let articleSlug = "test-article"
+    let articleTitle = "test article title"
+    let articleDescription = "test article description"
+    let articleBody = "test article body"
+    let articleUserId = userId
+    runSql $
+        sql $ mconcat
+            [ "INSERT INTO articles (article_slug, article_title, article_description, article_body, article_user_id)"
+            , "VALUES ('"
+            , T.encodeUtf8 articleSlug
+            , "', '"
+            , T.encodeUtf8 articleTitle
+            , "', '"
+            , T.encodeUtf8 articleDescription
+            , "', '"
+            , T.encodeUtf8 articleBody
+            , "', "
+            , T.encodeUtf8 articleUserId
+            , ");"
+            ]
 
 setupTestUser :: Text -> IO ()
 setupTestUser username = do
     let email = T.append username "@test.com"
     let password = Password $ T.append username "password"
     hash <- hashPassword password
-    setupSeedData $
+    runSql $
         sql $ mconcat
             [ "INSERT INTO users (user_email, user_username, user_password, user_bio, user_image)"
             , "VALUES ('"
@@ -83,6 +106,19 @@ setupTestUser username = do
             , T.encodeUtf8 . getHashedPasswd $ hash
             , "', ''"
             , ", '');"
+            ]
+
+removeTestUser :: Text -> IO ()
+removeTestUser username = do
+    let email = T.append username "@test.com"
+    let password = Password $ T.append username "password"
+    hash <- hashPassword password
+    runSql $
+        sql $ mconcat
+            [ "DELETE FROM users "
+            , "WHERE user_username = '" 
+            , T.encodeUtf8 username 
+            , "';" 
             ]
 
 registerNewUser :: forall st. Text -> THW.WaiSession st SResponse
