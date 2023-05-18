@@ -54,6 +54,7 @@ dependencies:
 default-extensions:
 - NoImplicitPrelude
 - OverloadedStrings
+- TypeOperators
 
 library:
   source-dirs: src

@@ -16,7 +16,7 @@ import Conduit.App
 import Conduit.Environment
 
 loadPool :: ByteString -> Int -> IO Pool
-loadPool connectString poolSize = acquire (poolSize, 1, connectString)
+loadPool connectString poolSize = acquire poolSize (Just 10) connectString
 
 runTransactionWithConnection :: MonadIO m => Connection -> Transaction b -> m b
 runTransactionWithConnection conn transaction = do
@@ -28,8 +28,9 @@ runTransactionWithPool pool transaction = do
     result <- liftIO $ Pool.use pool (Hasql.transaction Hasql.Serializable Hasql.Write transaction)
     case result of
         Right e -> pure e
-        Left (ConnectionError e) -> error $ "Failed to connect to database, error: " ++ show e
-        Left (SessionError e) -> throwIO e
+        Left (ConnectionUsageError e) -> error $ "Failed to connect to database, error: " ++ show e
+        Left (SessionUsageError e) -> throwIO e
+        Left AcquisitionTimeoutUsageError -> error "Timeout"
 
 runStmt :: Statement () a -> Transaction a
 runStmt = statement ()

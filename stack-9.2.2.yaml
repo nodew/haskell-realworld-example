@@ -1,6 +1,0 @@
-resolver: nightly-2022-04-18
-
-packages:
-- .
-
-allow-newer: true

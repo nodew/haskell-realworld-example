@@ -1,10 +1,10 @@
 # builder
-FROM fpco/stack-build-small:lts-19.4 as base
+FROM fpco/stack-build-small:lts-20.21 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update
-RUN apt install libpq-dev -y
+RUN apt-get update
+RUN apt-get install libpq-dev -y
 
 WORKDIR /app
 
@@ -22,11 +22,11 @@ COPY . .
 RUN stack --local-bin-path output install
 
 # runtime container
-FROM ubuntu:21.10
+FROM ubuntu:22.04 as runtime
 
-RUN apt update
+RUN apt-get update
 
-RUN apt install libpq-dev libncurses5 -y
+RUN apt-get install libpq-dev libncurses5 -y
 
 ENV POSTGRES_CONNECT_STRING=host=localhost port=5432 user=postgres password=postgres dbname=conduit connect_timeout=10
 ENV POSTGRES_POOL_SIZE=1

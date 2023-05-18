@@ -1,4 +1,4 @@
-resolver: lts-20.21
+resolver: lts-19.33
 
 packages:
 - .
@@ -6,4 +6,4 @@ packages:
 allow-newer: true
 
 extra-deps:
-- unix-compat-0.7
+- hasql-pool-0.8.0.7
