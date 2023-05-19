@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Conduit.Util where
 
 import Control.Monad.Trans.Maybe (MaybeT (..))

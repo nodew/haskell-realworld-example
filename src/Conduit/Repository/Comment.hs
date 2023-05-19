@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Conduit.Repository.Comment where
 
 import Conduit.App

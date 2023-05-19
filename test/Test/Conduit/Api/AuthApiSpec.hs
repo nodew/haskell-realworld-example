@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Test.Conduit.Api.AuthApiSpec where
 
 import Conduit.Api.Auth

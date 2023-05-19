@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Conduit.Environment where
 
 import Crypto.JOSE (JWK)

@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Test.Conduit.TestHelper where
 
 import Conduit

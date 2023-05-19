@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module Conduit.Db.Transaction where
 
 import Conduit.App

@@ -1,7 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
-
 module Conduit.Auth where
 
 import Conduit.App (AppEnv (envJwtKey))

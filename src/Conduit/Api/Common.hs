@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Conduit.Api.Common where
 
 import Conduit.Core.User

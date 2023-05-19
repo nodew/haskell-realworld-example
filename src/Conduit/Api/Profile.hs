@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
-
 module Conduit.Api.Profile where
 
 import Conduit.Api.Common

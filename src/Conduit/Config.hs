@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Conduit.Config where
 
 import Conduit.Util (exitWithErrorMessage)

@@ -52,8 +52,12 @@ dependencies:
 - warp
 
 default-extensions:
+- DataKinds
+- DerivingStrategies
+- DeriveAnyClass
 - NoImplicitPrelude
 - OverloadedStrings
+- TypeFamilies
 - TypeOperators
 
 library:
