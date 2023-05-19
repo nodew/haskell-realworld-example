@@ -1,0 +1,25 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
+{
+    "name": "Haskell-quick-dev-container",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/haskell:2": {
+            "ghcVersion": "9.2.7",
+            "installHLS": true,
+            "installStack": true,
+            "installStackGHCupHook": true
+            // "globalPackages": ""
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "haskell.haskell"
+            ]
+        }
+    },
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install libpq-dev -y",
+    "remoteUser": "root",
+    "containerUser": "root"
+}
