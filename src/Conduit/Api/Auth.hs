@@ -1,26 +1,27 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Conduit.Api.Auth where
 
-import RIO
-import Data.Aeson
-import Data.Aeson.Types
-import Servant
-
-import Conduit.App
 import Conduit.Api.Common
-import qualified Conduit.Repository.User as UserRepository
+import Conduit.App
 import Conduit.Core.Password
 import Conduit.Core.User
-import Conduit.JWT
-import Conduit.Util
 import Conduit.Environment
+import Conduit.JWT
+import qualified Conduit.Repository.User as UserRepository
+import Conduit.Util
+import Data.Aeson
+import Data.Aeson.Types
+import RIO
+import Servant
 
 data LoginUser = LoginUser
     { loginEmail :: Text
     , loginPassword :: Text
-    } deriving (Show, Generic)
+    }
+    deriving (Show, Generic)
 
 instance ToJSON LoginUser where
     toJSON = genericToJSON $ toJsonOptions 5
@@ -30,9 +31,10 @@ instance FromJSON LoginUser where
 
 data NewUser = NewUser
     { newUserUsername :: Text
-    , newUserEmail    :: Text
+    , newUserEmail :: Text
     , newUserPassword :: Text
-    } deriving (Show, Generic)
+    }
+    deriving (Show, Generic)
 
 instance ToJSON NewUser where
     toJSON = genericToJSON $ toJsonOptions 7
@@ -42,11 +44,12 @@ instance FromJSON NewUser where
 
 data LoginResponse = LoginResponse
     { loginRespUsername :: Text
-    , loginRespEmail    :: Text
-    , loginRespToken    :: Text
-    , loginRespBio      :: Text
-    , loginRespImage    :: Text
-    } deriving (Eq, Show, Generic)
+    , loginRespEmail :: Text
+    , loginRespToken :: Text
+    , loginRespBio :: Text
+    , loginRespImage :: Text
+    }
+    deriving (Eq, Show, Generic)
 
 instance ToJSON LoginResponse where
     toJSON = genericToJSON $ toJsonOptions 9
@@ -55,23 +58,25 @@ instance FromJSON LoginResponse where
     parseJSON = genericParseJSON $ toJsonOptions 9
 
 mapUserToLoginResponse :: User -> Text -> LoginResponse
-mapUserToLoginResponse user token = LoginResponse
-    { loginRespUsername = getUsername $ userName user
-    , loginRespEmail    = getEmailAddress $ userEmail user
-    , loginRespToken    = token
-    , loginRespBio      = userBio user
-    , loginRespImage    = userImage user
-    }
+mapUserToLoginResponse user token =
+    LoginResponse
+        { loginRespUsername = getUsername $ userName user
+        , loginRespEmail = getEmailAddress $ userEmail user
+        , loginRespToken = token
+        , loginRespBio = userBio user
+        , loginRespImage = userImage user
+        }
 
 {---------------------------------------------------------------------------------------}
 
-type AuthApi = "users"
-                    :> "login"
-                    :> ReqBody '[JSON] (UserData LoginUser)
-                    :> Post '[JSON] (UserData LoginResponse)
-           :<|> "users"
-                    :> ReqBody '[JSON] (UserData NewUser)
-                    :> Post '[JSON] (UserData LoginResponse)
+type AuthApi =
+    "users"
+        :> "login"
+        :> ReqBody '[JSON] (UserData LoginUser)
+        :> Post '[JSON] (UserData LoginResponse)
+        :<|> "users"
+            :> ReqBody '[JSON] (UserData NewUser)
+            :> Post '[JSON] (UserData LoginResponse)
 
 loginHandler :: UserData LoginUser -> AppM (UserData LoginResponse)
 loginHandler (UserData u) =
@@ -93,8 +98,9 @@ genUserResponse user = do
     let username = userName user
     jwtKey <- getJwtKey'
     claims <- liftIO $ mkClaims username
-    liftIO $ signJwt jwtKey claims
-        >>= either (\_ -> throwIO err422) (return . mapUserToLoginResponse user)
+    liftIO $
+        signJwt jwtKey claims
+            >>= either (\_ -> throwIO err422) (return . mapUserToLoginResponse user)
 
 authServer :: ServerT AuthApi AppM
 authServer = loginHandler :<|> registerHandler

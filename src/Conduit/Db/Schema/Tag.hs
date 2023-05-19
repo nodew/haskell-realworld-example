@@ -1,18 +1,18 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Conduit.Db.Schema.Tag where
 
+import Conduit.Core.Article
 import RIO
 import Rel8
 
-import Conduit.Core.Article
-
 data TagEntity f = TagEntity
-    { entityTagId   :: Column f TagId
+    { entityTagId :: Column f TagId
     , entityTagText :: Column f Text
     }
     deriving stock (Generic)
@@ -21,14 +21,16 @@ data TagEntity f = TagEntity
 deriving stock instance f ~ Result => Show (TagEntity f)
 
 tagSchema :: TableSchema (TagEntity Name)
-tagSchema = TableSchema
-    { name = "tags"
-    , schema = Nothing
-    , columns = TagEntity
-        { entityTagId = "tag_id"
-        , entityTagText = "tag_text"
+tagSchema =
+    TableSchema
+        { name = "tags"
+        , schema = Nothing
+        , columns =
+            TagEntity
+                { entityTagId = "tag_id"
+                , entityTagText = "tag_text"
+                }
         }
-    }
 
 getTagIdStmt :: Text -> Query (Expr TagId)
 getTagIdStmt tag = do
@@ -37,9 +39,10 @@ getTagIdStmt tag = do
     return $ entityTagId tagEntity
 
 insertTagStmt :: Text -> Insert [TagId]
-insertTagStmt tag = Insert
-    { into = tagSchema
-    , rows = values [TagEntity (unsafeCastExpr $ nextval "tags_tag_id_seq")  (lit tag)]
-    , onConflict = Abort
-    , returning = Projection entityTagId
-    }
+insertTagStmt tag =
+    Insert
+        { into = tagSchema
+        , rows = values [TagEntity (unsafeCastExpr $ nextval "tags_tag_id_seq") (lit tag)]
+        , onConflict = Abort
+        , returning = Projection entityTagId
+        }

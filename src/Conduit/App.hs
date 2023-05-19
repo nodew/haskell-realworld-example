@@ -1,16 +1,16 @@
-{-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UnicodeSyntax #-}
 
 module Conduit.App where
 
-import RIO
-import Hasql.Pool (Pool)
-import Crypto.JOSE.JWK ( JWK )
-import Control.Monad.Trans.Except ( ExceptT(ExceptT) )
-import qualified Servant
 import Conduit.Environment
+import Control.Monad.Trans.Except (ExceptT (ExceptT))
+import Crypto.JOSE.JWK (JWK)
+import Hasql.Pool (Pool)
+import RIO
+import qualified Servant
 
 data AppEnv = AppEnv
     { envDbPool :: Pool
@@ -19,7 +19,7 @@ data AppEnv = AppEnv
 
 type AppM = RIO AppEnv
 
-runHandler ∷ AppEnv → AppM a → Servant.Handler a
+runHandler :: AppEnv -> AppM a -> Servant.Handler a
 runHandler env app = Servant.Handler $ ExceptT $ try $ runRIO env app
 
 instance HasDbPool AppEnv where

@@ -1,38 +1,38 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+
 module Conduit.Repository.Article where
 
-import RIO
-import Rel8
-import Hasql.Transaction (Transaction)
+import Conduit.App
+import Conduit.Core.Article
+import Conduit.Core.User
+import Conduit.Db
+import Conduit.Util
 import Data.Functor.Contravariant
 import Data.List (head, (\\))
-
-import Conduit.Core.User
-import Conduit.Core.Article
-import Conduit.Db
-import Conduit.App
-import Conduit.Util
+import Hasql.Transaction (Transaction)
+import RIO
+import Rel8
 
 data ArticleFilters = ArticleFilters
-    { getTagFilter      :: Maybe TagId
+    { getTagFilter :: Maybe TagId
     , getFavoriteFilter :: Maybe UserId
-    , getAuthorFilter   :: Maybe UserId
+    , getAuthorFilter :: Maybe UserId
     }
 
 data Pagination = Pagination
-    { pageNum  :: Int64
+    { pageNum :: Int64
     , pageSize :: Int64
     }
 
 data EnrichedArticle = EnrichedArticle
-    { enrArticle         :: Article
-    , enrAuthor          :: User
+    { enrArticle :: Article
+    , enrAuthor :: User
     , enrFollowingAuthor :: Bool
-    , enrIsFavorited     :: Bool
-    , enrFavoritedCount  :: Int64
+    , enrIsFavorited :: Bool
+    , enrFavoritedCount :: Int64
     }
 
 type EnrichedArticleQuery = Query (MaybeTable Expr (ListTable Expr (TagEntity Expr)), UserEntity Expr, Expr Bool, Expr Bool, Expr Int64)
@@ -42,17 +42,18 @@ type EnrichedArticleResult = (Maybe [TagEntity Result], UserEntity Result, Bool,
 mapArticleEntityWithTagsToArticle :: (ArticleEntity Result, [TagEntity Result]) -> Article
 mapArticleEntityWithTagsToArticle (article, tags) =
     let article' = mapArticleEntityToArticle article
-    in article' { articleTags = map entityTagText tags}
+     in article' {articleTags = map entityTagText tags}
 
-enrichedArticle :: (ArticleEntity Result, EnrichedArticleResult)
-                -> EnrichedArticle
+enrichedArticle ::
+    (ArticleEntity Result, EnrichedArticleResult) ->
+    EnrichedArticle
 enrichedArticle (articleEntity, (mbTags, authorEntity, followingAuthor, favorited, favoritedCount)) =
-        EnrichedArticle
-            (mapArticleEntityWithTagsToArticle (articleEntity, fromMaybe [] mbTags))
-            (mapUserEntityToUser authorEntity)
-            followingAuthor
-            favorited
-            favoritedCount
+    EnrichedArticle
+        (mapArticleEntityWithTagsToArticle (articleEntity, fromMaybe [] mbTags))
+        (mapUserEntityToUser authorEntity)
+        followingAuthor
+        favorited
+        favoritedCount
 
 filterArticleByAuthorStmt :: ArticleEntity Expr -> UserId -> Expr Bool
 filterArticleByAuthorStmt article uid = entityArticleAuthorId article ==. lit uid
@@ -75,20 +76,21 @@ getAllArticleStmt filters = do
     forM_ tag' $ filterArticleByTagStmt article
     return article
     where
-        tag'      = getTagFilter filters
+        tag' = getTagFilter filters
         favorite' = getFavoriteFilter filters
-        author'   = getAuthorFilter filters
+        author' = getAuthorFilter filters
 
 getPagedArticleStmt :: Int64 -> Int64 -> ArticleFilters -> Query (ArticleEntity Expr)
 getPagedArticleStmt pageSize page filters =
-    limit (fromIntegral pageSize)
-        $ offset (fromIntegral page)
-        $ orderBy (entityArticleCreatedAt >$< desc)
-        $ getAllArticleStmt filters
+    limit (fromIntegral pageSize) $
+        offset (fromIntegral page) $
+            orderBy (entityArticleCreatedAt >$< desc) $
+                getAllArticleStmt filters
 
-getTagsOfArticleStmt :: (Column f ArticleId ~ Expr ArticleId)
-                     => ArticleEntity f
-                     -> Query (MaybeTable Expr (ListTable Expr (TagEntity Expr)))
+getTagsOfArticleStmt ::
+    (Column f ArticleId ~ Expr ArticleId) =>
+    ArticleEntity f ->
+    Query (MaybeTable Expr (ListTable Expr (TagEntity Expr)))
 getTagsOfArticleStmt article = Rel8.optional $ aggregate $ do
     tagId <- getAllArticleTagsStmt (entityArticleId article)
     tag <- each tagSchema
@@ -113,7 +115,7 @@ createArticle article = runTransaction $ do
         Just articleId' -> do
             tagIds <- mapM getOrCreateTagId' (articleTags article)
             _ <- runStmt $ insert $ insertArticleTagsStmt articleId' tagIds
-            return $ Just article { articleId = articleId' }
+            return $ Just article {articleId = articleId'}
         Nothing -> return Nothing
 
 getTagId' :: Text -> Transaction (Maybe TagId)
@@ -125,9 +127,10 @@ getTagId tag = runTransaction $ getTagId' tag
 getOrCreateTagId' :: Text -> Transaction TagId
 getOrCreateTagId' tag = do
     tagId <- getTagId' tag
-    maybe (runStmt $ head <$> insert (insertTagStmt tag))
-          return
-          tagId
+    maybe
+        (runStmt $ head <$> insert (insertTagStmt tag))
+        return
+        tagId
 
 getEnrichedArticleById :: Maybe User -> ArticleId -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleById mbUser id = do
@@ -145,9 +148,9 @@ getArticleById id = do
 getEnrichedArticleBySlug :: Maybe User -> Slug -> AppM (Maybe EnrichedArticle)
 getEnrichedArticleBySlug mbUser slug = do
     records <- executeStmt $ select $ do
-            article <- getArticleEntityBySlugStmt $ litExpr slug
-            enrichedData <- getArticleEnrichedDataStmt mbUser article
-            return (article, enrichedData)
+        article <- getArticleEntityBySlugStmt $ litExpr slug
+        enrichedData <- getArticleEnrichedDataStmt mbUser article
+        return (article, enrichedData)
     return $ listToMaybe $ map enrichedArticle records
 
 getArticleBySlug :: Slug -> AppM (Maybe Article)
@@ -168,7 +171,7 @@ getPagedArticle mbUser p filters = do
         return (total, pagedResults)
     return (map enrichedArticle pagedResults, fromMaybe 0 . listToMaybe $ total)
 
-checkFavorite :: User -> ArticleId  -> AppM Bool
+checkFavorite :: User -> ArticleId -> AppM Bool
 checkFavorite user articleId = do
     exists <- executeStmt $ select $ checkFavoriteStmt (userId user) (litExpr articleId)
     return $ exists == [True]

@@ -1,17 +1,17 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Conduit.Repository.Comment where
 
-import RIO
-import Rel8
-import Data.UUID
-
 import Conduit.App
-import Conduit.Core.User
 import Conduit.Core.Article
 import Conduit.Core.Comment
+import Conduit.Core.User
 import Conduit.Db
+import Data.UUID
+import RIO
+import Rel8
 
-type EnrichedComment = (Comment, User, Bool )
+type EnrichedComment = (Comment, User, Bool)
 
 getEnrichedCommentsByArticleId :: Maybe User -> ArticleId -> AppM [EnrichedComment]
 getEnrichedCommentsByArticleId mbUser articleId = do
@@ -28,7 +28,7 @@ getCommentById commentId = do
     return $ listToMaybe $ map mapCommentEntityToComment comments
 
 getCommentByUUID :: UUID -> AppM (Maybe Comment)
-getCommentByUUID  uuid = do
+getCommentByUUID uuid = do
     comments <- executeStmt $ select $ getCommentByUUIDStmt (litExpr uuid)
     return $ listToMaybe $ map mapCommentEntityToComment comments
 
@@ -37,7 +37,7 @@ addComment comment = do
     commentId <- executeStmt $ insert (insertCommentStmt comment)
     return $ updateCommentId =<< listToMaybe commentId
     where
-        updateCommentId commentId' = Just $ comment {commentId = commentId' }
+        updateCommentId commentId' = Just $ comment {commentId = commentId'}
 
 deleteCommentById :: CommentId -> AppM Bool
 deleteCommentById commentId = do

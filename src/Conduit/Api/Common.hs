@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
+
 module Conduit.Api.Common where
 
-import RIO
-import Data.Aeson
-
-import Conduit.Util
 import Conduit.Core.User
+import Conduit.Util
+import Data.Aeson
+import RIO
 
-newtype UserData a = UserData { userData :: a }
+newtype UserData a = UserData {userData :: a}
     deriving (Eq, Show, Generic)
 
 instance ToJSON a => ToJSON (UserData a) where
@@ -18,7 +18,7 @@ instance FromJSON a => FromJSON (UserData a) where
         a <- o .: "user"
         return (UserData a)
 
-newtype Profile a = Profile { profile :: a }
+newtype Profile a = Profile {profile :: a}
     deriving (Show, Generic)
 
 instance ToJSON a => ToJSON (Profile a) where
@@ -30,11 +30,12 @@ instance FromJSON a => FromJSON (Profile a) where
         return (Profile a)
 
 data UserProfile = UserProfile
-    { profileUsername  :: Text
-    , profileBio       :: Text
-    , profileImage     :: Text
+    { profileUsername :: Text
+    , profileBio :: Text
+    , profileImage :: Text
     , profileFollowing :: Bool
-    } deriving (Eq, Show, Generic)
+    }
+    deriving (Eq, Show, Generic)
 
 instance ToJSON UserProfile where
     toJSON = genericToJSON $ toJsonOptions 7
@@ -43,9 +44,10 @@ instance FromJSON UserProfile where
     parseJSON = genericParseJSON $ toJsonOptions 7
 
 mapUserToUserProfile :: User -> Bool -> UserProfile
-mapUserToUserProfile user following = UserProfile
-    { profileUsername  = getUsername $ userName user
-    , profileBio       = userBio user
-    , profileImage     = userImage user
-    , profileFollowing = following
-    }
+mapUserToUserProfile user following =
+    UserProfile
+        { profileUsername = getUsername $ userName user
+        , profileBio = userBio user
+        , profileImage = userImage user
+        , profileFollowing = following
+        }

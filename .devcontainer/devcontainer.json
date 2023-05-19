@@ -8,14 +8,15 @@
             "ghcVersion": "9.2.7",
             "installHLS": true,
             "installStack": true,
-            "installStackGHCupHook": true
-            // "globalPackages": ""
+            "installStackGHCupHook": true,
+            "globalPackages": "fourmolu"
         }
     },
     "customizations": {
         "vscode": {
             "extensions": [
-                "haskell.haskell"
+                "haskell.haskell",
+                "streetsidesoftware.code-spell-checker"
             ]
         }
     },

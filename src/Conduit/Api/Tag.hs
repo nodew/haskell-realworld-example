@@ -1,22 +1,21 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Conduit.Api.Tag where
 
-import RIO
-import Rel8
+import Conduit.App
+import Conduit.Db
 import Data.Aeson
 import Hasql.Transaction (statement)
+import RIO
+import Rel8
 import Servant
 
-
-import Conduit.Db
-
-import Conduit.App
-
 newtype TagsResponse = TagsResponse
-    { tags :: [Text] } deriving (Generic)
+    {tags :: [Text]}
+    deriving (Generic)
 
 instance ToJSON TagsResponse where
     toJSON (TagsResponse a) = object ["tags" .= a]

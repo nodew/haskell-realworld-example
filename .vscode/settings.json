@@ -21,5 +21,7 @@
         "uncurry",
         "unfollow",
         "varchar"
-    ]
+    ],
+    "haskell.plugin.fourmolu.config.external": true,
+    "haskell.formattingProvider": "fourmolu"
 }

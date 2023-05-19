@@ -22,11 +22,10 @@ import Network.Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Test
 import RIO
+import System.IO (putStrLn)
 import Test.Hspec
 import Test.Hspec.Wai
 import qualified Test.Hspec.Wai as THW
-import System.IO (putStrLn)
-import Conduit.Config
 
 loadTestEnv :: IO AppEnv
 loadTestEnv = do
@@ -36,7 +35,8 @@ loadTestEnv = do
     result <- autoMigrate pool
     whenJust result $ \e -> do
         error $ show e
-    let env = AppEnv
+    let env =
+            AppEnv
                 { envDbPool = pool
                 , envJwtKey = jwtKey
                 }
@@ -75,20 +75,21 @@ setupTestArticle userId = do
     let articleBody = "test article body"
     let articleUserId = userId
     runSql $
-        sql $ mconcat
-            [ "INSERT INTO articles (article_slug, article_title, article_description, article_body, article_user_id)"
-            , "VALUES ('"
-            , T.encodeUtf8 articleSlug
-            , "', '"
-            , T.encodeUtf8 articleTitle
-            , "', '"
-            , T.encodeUtf8 articleDescription
-            , "', '"
-            , T.encodeUtf8 articleBody
-            , "', "
-            , T.encodeUtf8 articleUserId
-            , ");"
-            ]
+        sql $
+            mconcat
+                [ "INSERT INTO articles (article_slug, article_title, article_description, article_body, article_user_id)"
+                , "VALUES ('"
+                , T.encodeUtf8 articleSlug
+                , "', '"
+                , T.encodeUtf8 articleTitle
+                , "', '"
+                , T.encodeUtf8 articleDescription
+                , "', '"
+                , T.encodeUtf8 articleBody
+                , "', "
+                , T.encodeUtf8 articleUserId
+                , ");"
+                ]
 
 setupTestUser :: Text -> IO ()
 setupTestUser username = do
@@ -96,17 +97,18 @@ setupTestUser username = do
     let password = Password $ T.append username "password"
     hash <- hashPassword password
     runSql $
-        sql $ mconcat
-            [ "INSERT INTO users (user_email, user_username, user_password, user_bio, user_image)"
-            , "VALUES ('"
-            , T.encodeUtf8 email
-            , "', '"
-            , T.encodeUtf8 username
-            , "', '"
-            , T.encodeUtf8 . getHashedPasswd $ hash
-            , "', ''"
-            , ", '');"
-            ]
+        sql $
+            mconcat
+                [ "INSERT INTO users (user_email, user_username, user_password, user_bio, user_image)"
+                , "VALUES ('"
+                , T.encodeUtf8 email
+                , "', '"
+                , T.encodeUtf8 username
+                , "', '"
+                , T.encodeUtf8 . getHashedPasswd $ hash
+                , "', ''"
+                , ", '');"
+                ]
 
 removeTestUser :: Text -> IO ()
 removeTestUser username = do
@@ -114,12 +116,13 @@ removeTestUser username = do
     let password = Password $ T.append username "password"
     hash <- hashPassword password
     runSql $
-        sql $ mconcat
-            [ "DELETE FROM users "
-            , "WHERE user_username = '" 
-            , T.encodeUtf8 username 
-            , "';" 
-            ]
+        sql $
+            mconcat
+                [ "DELETE FROM users "
+                , "WHERE user_username = '"
+                , T.encodeUtf8 username
+                , "';"
+                ]
 
 registerNewUser :: forall st. Text -> THW.WaiSession st SResponse
 registerNewUser username = do

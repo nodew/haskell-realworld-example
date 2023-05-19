@@ -1,15 +1,15 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
+
 module Conduit.Repository.User where
 
+import Conduit.App
+import Conduit.Core.Password
+import Conduit.Core.User
+import Conduit.Db
 import RIO
 import Rel8
-
-import Conduit.App
-import Conduit.Core.User
-import Conduit.Core.Password
-import Conduit.Db
 
 getUserById :: UserId -> AppM (Maybe User)
 getUserById uid = do
@@ -26,30 +26,28 @@ getUserByEmail email = do
     users <- executeStmt $ select $ getUserByEmailStmt email
     return $ listToMaybe $ map mapUserEntityToUser users
 
-getUserByEmailAndPassword :: EmailAddress -> Password  -> AppM (Maybe User)
+getUserByEmailAndPassword :: EmailAddress -> Password -> AppM (Maybe User)
 getUserByEmailAndPassword email password = do
     users <- executeStmt $ select $ getUserByEmailStmt email
     return $ verifyPassword' =<< listToMaybe users
     where
         verifyPassword' user =
             if verifyPassword password (entityUserPassword user)
-            then
-                Just $ mapUserEntityToUser user
-            else
-                Nothing
+                then Just $ mapUserEntityToUser user
+                else Nothing
 
 saveNewUser :: User -> Password -> AppM (Maybe User)
 saveNewUser user password = do
     hashedPwdAndSalt <- liftIO $ hashPassword password
     userIds <- executeStmt $ insert $ insertUserStmt user hashedPwdAndSalt
-    return $ listToMaybe userIds >>= \uid -> Just $ user { userId = uid }
+    return $ listToMaybe userIds >>= \uid -> Just $ user {userId = uid}
 
 updateUser :: User -> Maybe Password -> AppM Bool
 updateUser user mbPassword = do
     hashAndSalt <-
         case mbPassword of
             Just password -> liftIO $ Just <$> hashPassword password
-            _             -> return Nothing
+            _ -> return Nothing
     rows <- executeStmt $ update $ updateUserStmt user hashAndSalt
     return $ rows > 0
 
@@ -60,7 +58,7 @@ checkFollowship user following = do
 
 followUser :: User -> UserId -> AppM Bool
 followUser user toFollow = do
-    rows <-executeStmt $ insert $ createFollowshipStmt (userId user) toFollow
+    rows <- executeStmt $ insert $ createFollowshipStmt (userId user) toFollow
     return $ rows == 1
 
 unfollowUser :: User -> UserId -> AppM Bool

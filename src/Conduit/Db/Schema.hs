@@ -1,6 +1,7 @@
 module Conduit.Db.Schema
-( module Schema
-) where
+    ( module Schema
+    )
+where
 
 import Conduit.Db.Schema.Article as Schema
 import Conduit.Db.Schema.ArticleTag as Schema

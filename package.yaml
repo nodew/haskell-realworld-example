@@ -58,6 +58,7 @@ default-extensions:
 
 library:
   source-dirs: src
+  language: GHC2021
 
 executables:
   conduit-server-exe:
@@ -69,6 +70,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - conduit-server
+    language: GHC2021
 
 tests:
   conduit-server-test:
@@ -84,3 +86,4 @@ tests:
     - hspec-wai
     - QuickCheck
     - conduit-server
+    language: GHC2021

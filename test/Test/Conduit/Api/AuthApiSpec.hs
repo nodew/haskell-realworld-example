@@ -1,19 +1,20 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Test.Conduit.Api.AuthApiSpec where
 
-import RIO
+import Conduit.Api.Auth
+import Conduit.Api.Common
 import Data.Aeson
 import Data.Maybe
-import Test.Hspec
-import Network.Wai.Test
 import Network.HTTP.Types
-import Conduit.Api.Common
-import Conduit.Api.Auth
+import Network.Wai.Test
+import RIO
 import Test.Conduit.TestHelper
+import Test.Hspec
 
 spec :: Spec
 spec =
-     context "Login/Register user" $ afterAll_ cleanUpDb $ do
+    context "Login/Register user" $ afterAll_ cleanUpDb $ do
         withApplication $ do
             it "should register a new user" $ do
                 response <- registerNewUser "test001"

@@ -1,21 +1,23 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Conduit.Util where
 
-import RIO
-import Control.Monad.Trans.Maybe ( MaybeT(..) )
-import Data.Aeson ( defaultOptions, Options(fieldLabelModifier) )
-import Data.List ( head, tail )
-import Data.Char ( toLower )
-import Data.UUID
-import System.Random
+import Control.Monad.Trans.Maybe (MaybeT (..))
+import Data.Aeson (Options (fieldLabelModifier), defaultOptions)
 import Data.ByteArray (Bytes, convert)
+import Data.Char (toLower)
+import Data.List (head, tail)
 import Data.Text.Encoding (decodeUtf8)
-import System.IO ( hPutStrLn )
+import Data.UUID
+import RIO
+import System.IO (hPutStrLn)
+import System.Random
 
 toJsonOptions :: Int -> Options
 toJsonOptions prefixLength =
     defaultOptions
-        { fieldLabelModifier = headToLower . drop prefixLength }
+        { fieldLabelModifier = headToLower . drop prefixLength
+        }
     where
         headToLower x = toLower (head x) : tail x
 

@@ -1,9 +1,8 @@
 module Main where
 
-import RIO
-
 import Conduit
 import Conduit.Config
+import RIO
 
 main :: IO ()
 main = do

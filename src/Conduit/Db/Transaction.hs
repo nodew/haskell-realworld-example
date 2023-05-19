@@ -1,19 +1,19 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Conduit.Db.Transaction where
 
-import RIO
+import Conduit.App
+import Conduit.Config
+import Conduit.Environment
 import Data.List
 import Hasql.Connection (Connection)
-import Hasql.Pool ( Pool, UsageError(..), acquire )
+import Hasql.Pool (Pool, UsageError (..), acquire)
 import qualified Hasql.Pool as Pool
-import Hasql.Transaction ( Transaction, condemn, statement, sql )
 import qualified Hasql.Session as Session
-import qualified Hasql.Transaction.Sessions as Hasql
 import Hasql.Statement (Statement)
-
-import Conduit.Config
-import Conduit.App
-import Conduit.Environment
+import Hasql.Transaction (Transaction, condemn, sql, statement)
+import qualified Hasql.Transaction.Sessions as Hasql
+import RIO
 
 loadPool :: ByteString -> Int -> IO Pool
 loadPool connectString poolSize = acquire poolSize (Just 10) connectString
@@ -35,7 +35,7 @@ runTransactionWithPool pool transaction = do
 runStmt :: Statement () a -> Transaction a
 runStmt = statement ()
 
-runTransaction :: forall a m env . (HasDbPool env, MonadReader env m, MonadIO m) => Transaction a -> m a
+runTransaction :: forall a m env. (HasDbPool env, MonadReader env m, MonadIO m) => Transaction a -> m a
 runTransaction transaction = do
     pool <- getDbPool'
     runTransactionWithPool pool transaction
@@ -44,8 +44,10 @@ executeStmt :: Statement () a -> AppM a
 executeStmt = runTransaction . runStmt
 
 truncateTables :: [Text] -> Transaction ()
-truncateTables tables = sql $ mconcat
-    [ "TRUNCATE "
-    , fromString $ intercalate ", " (map show tables)
-    ," RESTART IDENTITY;"
-    ]
+truncateTables tables =
+    sql $
+        mconcat
+            [ "TRUNCATE "
+            , fromString $ intercalate ", " (map show tables)
+            , " RESTART IDENTITY;"
+            ]

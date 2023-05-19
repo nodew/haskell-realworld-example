@@ -1,18 +1,18 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Conduit.Db.Schema.UserFollow where
 
+import Conduit.Core.User
 import RIO
 import Rel8
 
-import Conduit.Core.User
-
 data UserFollowEntity f = UserFollowEntity
-    { fwsUserId          :: Column f UserId
+    { fwsUserId :: Column f UserId
     , fwsFollowingUserId :: Column f UserId
     }
     deriving stock (Generic)
@@ -21,31 +21,35 @@ data UserFollowEntity f = UserFollowEntity
 deriving stock instance f ~ Result => Show (UserFollowEntity f)
 
 userFollowSchema :: TableSchema (UserFollowEntity Name)
-userFollowSchema = TableSchema
-    { name = "follows"
-    , schema = Nothing
-    , columns = UserFollowEntity
-        { fwsUserId          = "fws_user_id"
-        , fwsFollowingUserId = "fws_follows_user_id"
+userFollowSchema =
+    TableSchema
+        { name = "follows"
+        , schema = Nothing
+        , columns =
+            UserFollowEntity
+                { fwsUserId = "fws_user_id"
+                , fwsFollowingUserId = "fws_follows_user_id"
+                }
         }
-    }
 
 createFollowshipStmt :: UserId -> UserId -> Insert Int64
 createFollowshipStmt currentUserId toFollowUserId =
     Insert
         { into = userFollowSchema
-        , rows = values
-            [ UserFollowEntity
-                { fwsUserId = lit currentUserId
-                , fwsFollowingUserId = lit toFollowUserId
-                }
-            ]
+        , rows =
+            values
+                [ UserFollowEntity
+                    { fwsUserId = lit currentUserId
+                    , fwsFollowingUserId = lit toFollowUserId
+                    }
+                ]
         , onConflict = DoNothing
         , returning = NumberOfRowsAffected
         }
 
 removeFollowshipStmt :: UserId -> UserId -> Delete Int64
-removeFollowshipStmt currentUserId followingUserId = Delete
+removeFollowshipStmt currentUserId followingUserId =
+    Delete
         { from = userFollowSchema
         , using = pure ()
         , deleteWhere = \_ o -> (fwsUserId o ==. lit currentUserId) &&. (fwsFollowingUserId o ==. lit followingUserId)
