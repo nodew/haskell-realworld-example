@@ -1,5 +1,5 @@
 # builder
-FROM fpco/stack-build-small:lts-20.21 as base
+FROM fpco/stack-build-small:lts-21.25 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 

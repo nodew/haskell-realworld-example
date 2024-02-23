@@ -4,6 +4,7 @@ import Conduit.App
 import Conduit.Config
 import Conduit.Environment
 import Data.List
+import Data.Time.Clock (secondsToDiffTime, DiffTime)
 import Hasql.Connection (Connection)
 import Hasql.Pool (Pool, UsageError (..), acquire)
 import qualified Hasql.Pool as Pool
@@ -13,8 +14,14 @@ import Hasql.Transaction (Transaction, condemn, sql, statement)
 import qualified Hasql.Transaction.Sessions as Hasql
 import RIO
 
+connectionAcquisitionTimeout :: DiffTime
+connectionAcquisitionTimeout = secondsToDiffTime 10 -- 10 seconds
+
+maximalConnectionLifetime :: DiffTime
+maximalConnectionLifetime = secondsToDiffTime 1800 -- 30 minutes
+
 loadPool :: ByteString -> Int -> IO Pool
-loadPool connectString poolSize = acquire poolSize (Just 10) connectString
+loadPool connectString poolSize = acquire poolSize connectionAcquisitionTimeout maximalConnectionLifetime connectString
 
 runTransactionWithConnection :: MonadIO m => Connection -> Transaction b -> m b
 runTransactionWithConnection conn transaction = do

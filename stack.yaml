@@ -1,4 +1,4 @@
-resolver: lts-20.21
+resolver: lts-21.25
 
 packages:
 - .
@@ -6,4 +6,5 @@ packages:
 allow-newer: true
 
 extra-deps:
-- unix-compat-0.7
+- jose-0.9
+- servant-auth-server-0.4.7.0

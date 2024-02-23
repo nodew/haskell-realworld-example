@@ -65,7 +65,7 @@ updateUserHandler user (UserData user') = do
         else throwIO err400
     where
         newName = maybe (userName user) Username (uurUsername user')
-        newEmail = maybe (userEmail user) EmailAddress (uurUsername user')
+        newEmail = maybe (userEmail user) EmailAddress (uurEmail user')
         newPassword = Password <$> uurPassword user'
         newBio = fromMaybe (userBio user) (uurBio user')
         newImage = fromMaybe (userImage user) (uurImage user')

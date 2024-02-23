@@ -1,9 +1,0 @@
-resolver: lts-19.33
-
-packages:
-- .
-
-allow-newer: true
-
-extra-deps:
-- hasql-pool-0.8.0.7
